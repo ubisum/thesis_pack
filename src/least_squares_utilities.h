@@ -1,6 +1,8 @@
 #ifndef LEAST_SQUARES_UTILITIES_H
 #define LEAST_SQUARES_UTILITIES_H
 
+
+
 namespace least_squares
 {
 
@@ -70,7 +72,7 @@ MatrixXf computeJacobian (int index, MatrixXf X, MatrixXf Z)
 
 }
 
-Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha)
+Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha, float gamma=1)
 {
     // initialize matrices and variables
     MatrixXf H = MatrixXf::Zero(3,3);
@@ -88,27 +90,38 @@ Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha)
 
         // compute matrix for line rotation
         Vector2f normal = Z.block(2,i,2,1);
+        //normal /= sqrt(normal.transpose()*normal);
+        float normal_factor = normal.transpose()*normal;
+        normal /= normal_factor;
         MatrixXf r_i(2,2);
         r_i << normal(0), -normal(1), normal(1), normal(0);
 
         // covariance matrices
         MatrixXf epsilon_matrix = MatrixXf::Identity(2,2);
         epsilon_matrix(1,1) = epsilon;
+        epsilon_matrix(0,0) = 10;
 
-        MatrixXf sigma_pi = r_i*epsilon_matrix*r_i.transpose();
+        MatrixXf sigma_pi = r_i.transpose()*epsilon_matrix*r_i;
 
         MatrixXf sigma_ij = MatrixXf::Zero(4,4);
         sigma_ij.block(0,0,2,2) = sigma_pi;
         sigma_ij.block(2,2,2,2) = alpha*MatrixXf::Identity(2,2);
+
+        // scale covariance matrix
+        float point_error = error.transpose()*sigma_ij*error;
+        float scale = 1;
+        if(point_error > gamma)
+            scale = sqrt(gamma/point_error);
+        sigma_ij *= scale;
 
         // local matrices
         MatrixXf h_ij = jacobian.transpose()*sigma_ij*jacobian;
         Vector3f b_ij = jacobian.transpose()*sigma_ij*error;
 
         // update global matrices
-        H+= h_ij;
-        b+=b_ij;
-        chi+= error.transpose()*error;
+        H += h_ij;
+        b += b_ij;
+        chi += error.transpose()*sigma_ij*error;
     }
 
     // solve linear system
@@ -132,6 +145,69 @@ Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha)
     // return output
     return output;
 
+}
+
+MatrixXf computeDistanceNM(MatrixXf ne_i, MatrixXf ne_j, float alpha_factor, float point_factor, MatrixXf T)
+{
+    // prepare output
+    MatrixXf dist = MatrixXf::Zero(ne_i.cols(), ne_j.cols());
+
+    // transform ne_j
+    MatrixXf transf = T.block(0,0,2,2)*ne_j.block(0,0,2,ne_j.cols());
+    MatrixXf transf_ex1 = T.block(0,0,2,2)*ne_j.block(2,0,2,ne_j.cols()) +
+            (T.block(0,2,2,1)).replicate(1,ne_j.cols());
+    MatrixXf transf_ex2 = T.block(0,0,2,2)*ne_j.block(4,0,2,ne_j.cols()) +
+            (T.block(0,2,2,1)).replicate(1,ne_j.cols());
+
+    // construct new ne_j
+    MatrixXf ne_j_transf = MatrixXf::Zero(6,ne_j.cols());
+    ne_j_transf.block(0,0,2,ne_j.cols()) = transf;
+    ne_j_transf.block(2,0,2,ne_j.cols()) = transf_ex1;
+    ne_j_transf.block(4,0,2,ne_j.cols()) = transf_ex2;
+
+    // loop over lines in ne_i
+    for(int i = 0; i<ne_i.cols(); i++)
+    {
+        // get a column of a line
+        MatrixXf col_i = ne_i.block(0,i,6,1); // 6x1
+
+        // compute middle point
+        Vector2f mid_i;
+        mid_i << col_i(2,0)+col_i(4,0), col_i(3,0)+col_i(5,0);
+        mid_i *= 0.5;
+
+        // normal part
+        Vector2f n_i = ne_i.block(0,i,2,1);
+
+        // loop over lines in ne_j
+        for(int j = 0; j<ne_j.cols(); j++)
+        {
+            // get a column of line
+            MatrixXf col_j = ne_j.block(0,j,6,1); // 6x1
+
+            // compute middle point
+            Vector2f mid_j;
+            mid_j << col_j(2,0)+col_j(4,0), col_j(3,0)+col_j(5,0);
+            mid_j *= 0.5;
+
+            // normal part
+            Vector2f n_j = ne_j.block(0,j,2,1);
+
+            // distances
+            Vector2f dist_n = n_i-n_j;
+            Vector2f dist_m = mid_i-mid_j;
+            float dist_n_value = (dist_n.transpose()*dist_n);
+            float dist_m_value = (dist_m.transpose()*dist_m);
+
+            // set value
+            dist(i,j) = alpha_factor*dist_n_value + point_factor*dist_m_value;
+        }
+
+
+    }
+
+    // return matrix of distances
+    return dist;
 }
 
 }

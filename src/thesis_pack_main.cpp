@@ -33,10 +33,7 @@ int main(int argc, char** argv)
 
             // fill a vector
             Vector2f temp_vec;
-            float first = coord.first;
-            float second = coord.second;
-            temp_vec << first, second;
-            //temp_vec << coord.first, coord.second;
+            temp_vec << coord.first, coord.second;
 
             // store vector
             vector.push_back(temp_vec);
@@ -46,27 +43,7 @@ int main(int argc, char** argv)
         extractedLines.push_back(computeLines(vector));
     }
 
-    MatrixXf T(3,3);
-    T <<  0.93969, -0.34202, 0.1,
-            0.34202, 0.93969, 0,
-            0, 0, 1;
 
-    printLines(extractedLines[0], 0);
-    printLines(extractedLines[1], 1);
-    printLines(extractedLines[2], 2);
-
-
-    MatrixXf prova(8,10);
-    Vector4f vec1(4,1);
-    vec1 << 1,2,3,4;
-    Vector4f vec2(4,1);
-    vec2 << 8,9,10,11;
-
-    prova.block(0,0,4,10) = vec1.replicate(1,10);
-    prova.block(4,0,4,10) = vec2.replicate(1,10);
-
-    cout << lsIteration(T,prova,0.5,0.5) << endl;
-    // cout << computeError(0,T, prova);
 
 
 
