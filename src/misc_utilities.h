@@ -3,16 +3,20 @@
 
 #include "matching_utilities.h"
 #include "fstream"
+#include "string"
+
 
 #define MIN_LINE_LENGTH 0.1*0.1
 #define MIN_FRAME_DIST 0.1*0.1
 
+using namespace std;
+
 namespace utilities
 {
 
-void parseRobotInfo(char* file_name, vector<completeInformation>& ci)
+void parseRobotInfo(string file_name, vector<completeInformation>& ci)
 {
-    ifstream file(file_name);
+    ifstream file(file_name.c_str());
     string str;
     char* pch;
     vector<string> parseInfo;
@@ -144,9 +148,197 @@ void printLines(vecPairsList Lines, int index)
                     ex_2(0) << "\t" << ex_2(1) << "\n";
         fputs(ss_lines.str().c_str(), fid);
 
+        if(counter == 0){
+            cout << lineRep<< endl << polar << endl << ex_1 << endl << ex_2 << endl << endl;
+        }
+
     }
 
 }
+
+MatrixXf linesByCol(const vector<vecPairsList>& scans_line, int index)
+{
+    // select a scan's lines
+    vecPairsList Lines = scans_line[index];
+
+    // output
+    MatrixXf lines_col = MatrixXf::Zero(10,Lines.size());
+
+    for(int counter = 0; counter<(int)Lines.size(); counter++)
+    {
+        // a line
+        vecPair vp = Lines[counter];
+        Vector2f ex_1 = vp.first;
+        Vector2f ex_2 = vp.second;
+
+        // line representation
+        Vector4f lineRep = lineRepresentation(ex_1, ex_2);
+
+        // line's polar form
+        Vector2f polar = polarRepresentation(ex_1, ex_2);
+
+        // fill output column
+        /*lines_col.block(0,counter,4,1) = lineRep;
+        lines_col.block(4,counter,2,1) = polar;
+        lines_col.block(6,counter,2,1) = ex_1;
+        lines_col.block(8,counter,2,1) = ex_2;*/
+        MatrixXf column_ith(10,1);
+        column_ith << lineRep(0),lineRep(1), lineRep(2),lineRep(3),
+                      polar(0),polar(1),
+                      ex_1(0),ex_1(1),
+                      ex_2(0),ex_2(1);
+        lines_col.block(0,counter,10,1) = column_ith;
+    }
+
+    // return output
+    return lines_col;
+}
+
+MatrixXi findMinIndeces(MatrixXf input_mat)
+{
+    // prepare output
+    MatrixXi output(1,2);
+
+    // find min in input matrix
+    float temp_min = input_mat.minCoeff();
+
+    // set a flag
+    bool first_row_flag = true;
+
+    // loop over matrix elements
+    for(int k = 0; k<input_mat.rows(); k++)
+    {
+        for (int z = 0; z<input_mat.cols(); z++)
+        {
+            // if current elemnts holds min values
+            if(input_mat(k,z) == temp_min)
+            {
+                // create a new row
+                MatrixXi new_row(1,2);
+                new_row << k,z;
+
+                // no row inserted in output matrix yet
+                if(first_row_flag)
+                {
+                    output.row(0) = new_row;
+                    first_row_flag = false;
+                }
+
+                // at least a row in the matrix
+                else
+                {
+                    MatrixXi temp = MatrixXi::Zero(output.rows()+1,2);
+                    temp << output, new_row;
+                    output = temp;
+                }
+            }
+        }
+    }
+
+    return output;
+}
+
+MatrixXi findValueInMatrix(MatrixXi input, float value)
+{
+    // output
+    MatrixXi indeces(1,2);
+
+    // flag
+    bool first_row_flag = true;
+
+    for(int i = 0; i<input.rows(); i++)
+    {
+        for(int j = 0; j<input.cols(); j++)
+        {
+            if(input(i,j) == value)
+            {
+                MatrixXi new_row(1,2);
+                new_row << i,j;
+                if(first_row_flag)
+                {
+                    indeces.row(0) = new_row;
+                    first_row_flag = false;
+                }
+
+                else
+                {
+                    MatrixXi new_matrix(indeces.rows()+1, 2);
+                    new_matrix << indeces, new_row;
+                    indeces = new_matrix;
+                }
+            }
+        }
+    }
+
+    return indeces;
+}
+
+void removeRow(MatrixXi& matrix, unsigned int rowToRemove)
+{
+    unsigned int numRows = matrix.rows()-1;
+    unsigned int numCols = matrix.cols();
+
+    if( rowToRemove < numRows )
+        matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
+MatrixXi findRepetitions(const MatrixXi& assoc)
+{
+    // temporary matrix
+    MatrixXi copy_assoc = MatrixXi::Zero(assoc.rows(),3);
+    copy_assoc.block(0,0,assoc.rows(),2) = assoc.block(0,0,assoc.rows(),2);
+
+    for(int i = 0; i<copy_assoc.rows(); i++)
+    {
+        // occurrences of current element
+        if(copy_assoc(i,2) == 0)
+        {
+            MatrixXi current_indeces = findValueInMatrix(copy_assoc.block(0,1,copy_assoc.rows(),1),copy_assoc(i,1));
+
+            // set flag of occurrences
+            if(current_indeces.rows() > 1)
+            {
+                for(int k = 0; k<current_indeces.rows(); k++)
+                    copy_assoc(current_indeces(k,0),2) = 1;
+            }
+        }
+    }
+
+    cout << copy_assoc << endl << endl;
+
+    // output material
+    MatrixXi output(1,2);
+    bool first_row_flag = true;
+
+    // delete repetitions in matrix
+    for(int j = 0; j<copy_assoc.rows(); j++)
+    {
+        if(copy_assoc(j,2) == 0)
+        {
+            MatrixXi new_row(1,2);
+            new_row << copy_assoc(j,0), copy_assoc(j,1);
+
+            if(first_row_flag)
+            {
+                output.row(0) = new_row;
+                first_row_flag = false;
+            }
+
+            else
+            {
+                MatrixXi new_matrix(output.rows()+1,2);
+                new_matrix << output, new_row;
+                output = new_matrix;
+            }
+        }
+    }
+
+    return output;
+
+}
+
 
 }
 

@@ -7,6 +7,10 @@
 #IncludeRegexTransform: 
 
 /home/ubisum/fuerte_workspace/thesis_pack/src/least_squares_utilities.h
+misc_utilities.h
+/home/ubisum/fuerte_workspace/thesis_pack/src/misc_utilities.h
+cmath
+-
 
 /home/ubisum/fuerte_workspace/thesis_pack/src/line_extractor.h
 iostream
