@@ -24,6 +24,12 @@ vector
 map
 -
 
+/home/ubisum/fuerte_workspace/thesis_pack/src/line_managing_utilities.h
+least_squares_utilities.h
+/home/ubisum/fuerte_workspace/thesis_pack/src/least_squares_utilities.h
+misc_utilities.h
+/home/ubisum/fuerte_workspace/thesis_pack/src/misc_utilities.h
+
 /home/ubisum/fuerte_workspace/thesis_pack/src/matching_utilities.h
 line_extractor.h
 /home/ubisum/fuerte_workspace/thesis_pack/src/line_extractor.h
@@ -47,6 +53,8 @@ matching_utilities.h
 /home/ubisum/fuerte_workspace/thesis_pack/src/matching_utilities.h
 fstream
 /home/ubisum/fuerte_workspace/thesis_pack/src/fstream
+string
+/home/ubisum/fuerte_workspace/thesis_pack/src/string
 
 /home/ubisum/fuerte_workspace/thesis_pack/src/thesis_pack_main.cpp
 stdio.h
@@ -61,6 +69,8 @@ line_extractor.h
 /home/ubisum/fuerte_workspace/thesis_pack/src/line_extractor.h
 least_squares_utilities.h
 /home/ubisum/fuerte_workspace/thesis_pack/src/least_squares_utilities.h
+line_managing_utilities.h
+/home/ubisum/fuerte_workspace/thesis_pack/src/line_managing_utilities.h
 vector
 /home/ubisum/fuerte_workspace/thesis_pack/src/vector
 

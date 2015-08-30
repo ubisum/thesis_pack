@@ -4,6 +4,7 @@
 #include "matching_utilities.h"
 #include "line_extractor.h"
 #include "least_squares_utilities.h"
+#include "line_managing_utilities.h"
 #include "vector"
 
 using namespace utilities;
@@ -48,11 +49,24 @@ int main(int argc, char** argv)
                 0.34202, 0.93969, 0,
             0, 0, 1;
 
-    printLines(extractedLines[0],0);
-    printLines(extractedLines[1],1);
+    printLinesFullDescription(extractedLines,0);
+    printLinesFullDescription(extractedLines,1);
 
     MatrixXf linesCol_0 = linesByCol(extractedLines,0);
     MatrixXf linesCol_1 = linesByCol(extractedLines, 1);
+
+    MatrixXf out_li, out_lj;
+    MatrixXf transf_mat =  getTransformationMatrix(linesCol_0, linesCol_1, out_li, out_lj);
+    MatrixXf new_lines = mergeLines(linesCol_0, linesCol_1, out_li, out_lj, transf_mat);
+    printLinesByExtremes(linesCol_0.block(6,0,4,linesCol_0.cols()), MatrixXf::Identity(3,3),"linesCol_0.txt");
+    printLinesByExtremes(linesCol_1.block(6,0,4,linesCol_1.cols()), transf_mat, "linesCol_1.txt");
+    printLinesByExtremes(new_lines.block(6,0,4,new_lines.cols()), MatrixXf::Identity(3,3), "new_lines.txt");
+    printAssociations(out_li, out_lj, transf_mat, "assoc.txt");
+
+
+    //printLines(linesCol_0.block(6,0,4,linesCol_0.cols()), MatrixXf::Identity(3,3), "convertedLines_0.txt");
+    //printLines(linesCol_1.block(6,0,4,linesCol_1.cols()), MatrixXf::Identity(3,3), "convertedLines_1.txt");
+
     MatrixXf ne_i(6,linesCol_0.cols());
     ne_i.block(0,0,2,linesCol_0.cols()) = linesCol_0.block(2,0,2,linesCol_0.cols());
     ne_i.block(2,0,4,linesCol_0.cols()) = linesCol_0.block(6,0,4,linesCol_0.cols());
@@ -60,7 +74,7 @@ int main(int argc, char** argv)
     ne_j.block(0,0,2,linesCol_1.cols()) = linesCol_1.block(2,0,2,linesCol_1.cols());
     ne_j.block(2,0,4,linesCol_1.cols()) = linesCol_1.block(6,0,4,linesCol_1.cols());
 
-    //cout << linesCol_1 << endl;
+//    //cout << linesCol_1 << endl;
     //cout << computeDistanceNM(ne_i,ne_j,0.1,0.4,T) << endl;
     //cout << ne_j << endl;
     //cout << linesCol_0.transpose() << endl;
@@ -79,6 +93,17 @@ int main(int argc, char** argv)
     //cout << findValueInMatrix(uno, uno.minCoeff()) << endl;
     //cout << findRepetitions(assoc) << endl;
     //findRepetitions(assoc);
-    cout << getTransformationMatrix(linesCol_0, linesCol_1) << endl;
+    //cout << getTransformationMatrix(linesCol_0, linesCol_1) << endl << endl;
+    //MatrixXf new_row = MatrixXf::Zero(10,17);
+    //MatrixXf new_dist = addIndecesRow(dist);
+    //cout << addIndecesRow(dist) << endl << endl;
+    //cout << dist << endl;
+    //cout << "originali " << dist.rows() << " " << dist.cols() << endl << endl;
+    //cout << "dopo " << new_dist.rows() << " " << new_dist.cols() << endl << endl;
+    //cout << new_row.block(new_row.rows()-1,0,1,new_row.cols()) << endl << endl;
+    MatrixXf prova_rt(2,5);
+    prova_rt << 1,2,3,4,5,6,7,8,9,10;
+    cout << prova_rt << endl << endl;
+    //cout << transformRT(prova_rt, T) << endl;
 
 }

@@ -129,6 +129,7 @@ CMakeFiles/thesis_pack_main.dir/src/line_extractor.o
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o
  /home/ubisum/fuerte_workspace/thesis_pack/src/least_squares_utilities.h
  /home/ubisum/fuerte_workspace/thesis_pack/src/line_extractor.h
+ /home/ubisum/fuerte_workspace/thesis_pack/src/line_managing_utilities.h
  /home/ubisum/fuerte_workspace/thesis_pack/src/matching_utilities.h
  /home/ubisum/fuerte_workspace/thesis_pack/src/misc_utilities.h
  /home/ubisum/fuerte_workspace/thesis_pack/src/thesis_pack_main.cpp

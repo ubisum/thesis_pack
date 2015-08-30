@@ -128,6 +128,7 @@ CMakeFiles/thesis_pack_main.dir/src/line_extractor.o: /usr/local/include/eigen3/
 
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/least_squares_utilities.h
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/line_extractor.h
+CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/line_managing_utilities.h
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/matching_utilities.h
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/misc_utilities.h
 CMakeFiles/thesis_pack_main.dir/src/thesis_pack_main.o: ../src/thesis_pack_main.cpp

@@ -38,7 +38,10 @@ namespace utilities
         Vector2f tangVec = (extreme2-extreme1)/(extreme2-extreme1).norm();
 
         // point on the line
-        Vector2f pointOnLine = extreme1 + tangVec*(-tangVec.transpose()*extreme1)/tangVec.squaredNorm();
+        //Vector2f pointOnLine = extreme1 + tangVec*(-tangVec.transpose()*extreme1)/tangVec.squaredNorm();
+        Vector2f pointOnLine;
+        pointOnLine << extreme1(0) + extreme2(0), extreme1(1) + extreme2(1);
+        pointOnLine *=  0.5;
 
         // compose data
         Vector4f lineRep;

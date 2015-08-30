@@ -14,6 +14,53 @@ using namespace std;
 namespace utilities
 {
 
+MatrixXf transformRT(MatrixXf lines, MatrixXf T)
+{
+    // local data
+    float x = T(0,2);
+    float y = T(1,2);
+    float theta = atan2(T(1,0),T(0,0));
+
+    // prepare output
+    MatrixXf transRT = MatrixXf::Zero(lines.rows(), lines.cols());
+
+    // transform
+    for(int i = 0; i<lines.cols(); i++)
+    {
+        // select a line
+        Vector2f line_ith = lines.block(0,i,2,1);
+
+        // current values
+        float rho_ith = line_ith(0);
+        float theta_ith = line_ith(1);
+
+        // compute transformation
+        float new_angle = theta_ith + theta;
+        transRT(1,i) = new_angle;
+        transRT(0,i) = rho_ith + cos(new_angle)*x + sin(new_angle)*y;
+    }
+
+    // return transformed data
+    return transRT;
+
+}
+
+MatrixXf transformVectors(MatrixXf vectors, MatrixXf T)
+{
+    // output matrix
+    MatrixXf output_vectors = MatrixXf::Zero(vectors.rows()+1, vectors.cols());
+    output_vectors.block(0,0,vectors.rows(),vectors.cols()) = vectors;
+
+    // set last row in output matrix
+    output_vectors.block(vectors.rows(),0,1,vectors.cols()) = MatrixXf::Constant(1, vectors.cols(), 1);
+
+    // product
+    MatrixXf product = T*output_vectors;
+
+    // return product
+    return product.block(0,0,vectors.rows(),vectors.cols());
+}
+
 void parseRobotInfo(string file_name, vector<completeInformation>& ci)
 {
     ifstream file(file_name.c_str());
@@ -115,11 +162,12 @@ vector<vecPairsList> selectLines(const vector<vecPairsList> lines)
     return selectedLines;
 }
 
-void printLines(vecPairsList Lines, int index)
+void printLinesFullDescription(const vector<vecPairsList>& lines_vector, int index)
 {
     cout << "entrata" << endl;
     stringstream ss_filename;
     ss_filename << "convertedLines_" << index << ".txt";
+    vecPairsList Lines = lines_vector[index];
 
     remove(ss_filename.str().c_str());
     FILE* fid = fopen(ss_filename.str().c_str(), "a");
@@ -153,6 +201,73 @@ void printLines(vecPairsList Lines, int index)
         }
 
     }
+
+}
+
+void printLinesByExtremes(MatrixXf lines, MatrixXf T, string file_name)
+{
+     // remove and reopen file
+    remove(file_name.c_str());
+    FILE* fid = fopen(file_name.c_str(), "a");
+
+    // loop over points
+    for(int i = 0; i<lines.cols(); i++)
+    {
+        // create temporary matrices
+        MatrixXf temp1 = MatrixXf::Constant(3,1,1);
+        MatrixXf temp2 = MatrixXf::Constant(3,1,1);
+
+        // fill temporary matrices
+        temp1.block(0,0,2,1) = lines.block(0,i,2,1);
+        temp2.block(0,0,2,1) = lines.block(2,i,2,1);
+
+        // products
+        Vector3f prod1 = T*temp1;
+        Vector3f prod2 = T*temp2;
+
+        // write to file
+        stringstream toTheFile;
+        toTheFile << prod1(0) << "\t" << prod1(1) << "\n" <<
+                     prod2(0) << "\t" << prod2(1) << "\n\n";
+
+        fputs(toTheFile.str().c_str(), fid);
+
+    }
+
+    fclose(fid);
+}
+
+void printAssociations(const MatrixXf& Li, const MatrixXf& Lj, const MatrixXf& T, string file_name)
+{
+    // remove and/or open file
+    remove(file_name.c_str());
+    FILE* fid = fopen(file_name.c_str(), "a");
+    //cout << Lj << endl << endl;
+
+    // loop over cols
+    for(int i = 0; i<Li.cols(); i++)
+    {
+        // get middlepoints
+        Vector2f middle_point_i = Li.block(0,i,2,1);
+        Vector2f middle_point_j = Lj.block(0,i,2,1);
+        cout << "middlepoints" << endl;
+        cout << middle_point_j << endl << endl;
+
+        // transform middlepoint j
+        MatrixXf transf_mp_j = transformVectors(middle_point_j, T);
+        //cout << transf_mp_j << endl << endl;
+
+        // prepare output to file
+        stringstream toTheFile;
+        toTheFile << middle_point_i(0) << "\t" << middle_point_i(1) << "\n" <<
+                     transf_mp_j(0,0) << "\t" << transf_mp_j(1,0) << "\n\n";
+
+        // write to file
+        fputs(toTheFile.str().c_str(), fid);
+    }
+
+    // close file
+    fclose(fid);
 
 }
 

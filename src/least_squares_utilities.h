@@ -83,6 +83,23 @@ MatrixXf computeJacobian (int index, MatrixXf X, MatrixXf Z)
 
 }
 
+/* add a row containing column indeces to a matrix */
+MatrixXf addIndecesRow(MatrixXf original_mat)
+{
+    // create new matrix
+    MatrixXf new_mat = MatrixXf::Zero(original_mat.rows()+1, original_mat.cols());
+
+    // fill new matrix
+    for(int i = 0; i<original_mat.cols(); i++)
+    {
+        new_mat.block(0,i,original_mat.rows(),1) = original_mat.block(0,i,original_mat.rows(),1);
+        new_mat(original_mat.rows(),i) = i;
+    }
+
+    // return new matrix
+    return new_mat;
+}
+
 Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha, float gamma=1)
 {
     // initialize matrices and variables
@@ -308,16 +325,22 @@ MatrixXi computeAssociations (const MatrixXf& dist, float last2_thresh)
     return findRepetitions(assoc);
 }
 
-MatrixXf getTransformationMatrix(MatrixXf left_lines, MatrixXf right_lines)
+MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& right_lines,
+                                 MatrixXf& out_li, MatrixXf& out_lj)
 {
     // initial transformation matrix
     MatrixXf transf_mat = MatrixXf::Identity(3,3);
 
     // initial matrices
-    MatrixXf Li = left_lines;
-    MatrixXf Lj = right_lines;
-    MatrixXf temp_li = MatrixXf::Zero(10,1);
-    MatrixXf temp_lj = MatrixXf::Zero(10,1);
+    //MatrixXf Li = left_lines;
+    //MatrixXf Lj = right_lines;
+    MatrixXf Li = addIndecesRow(left_lines);
+    //cout << Li << endl << endl;
+    MatrixXf Lj = addIndecesRow(right_lines);
+//    MatrixXf temp_li = MatrixXf::Zero(10,1);
+//    MatrixXf temp_lj = MatrixXf::Zero(10,1);
+    MatrixXf temp_li = MatrixXf::Zero(11,1);
+    MatrixXf temp_lj = MatrixXf::Zero(11,1);
     MatrixXi assoc;
     MatrixXf dist;
 
@@ -356,16 +379,20 @@ MatrixXf getTransformationMatrix(MatrixXf left_lines, MatrixXf right_lines)
         }
 
         // new matrices
-        temp_li = MatrixXf::Zero(10, assoc.rows());
-        temp_lj = MatrixXf::Zero(10, assoc.rows());
+//        temp_li = MatrixXf::Zero(10, assoc.rows());
+//        temp_lj = MatrixXf::Zero(10, assoc.rows());
+        temp_li = MatrixXf::Zero(11, assoc.rows());
+        temp_lj = MatrixXf::Zero(11, assoc.rows());
         MatrixXf Z = MatrixXf::Zero(8,assoc.rows());
 
         // fill new matrices
         for(int j = 0; j<assoc.rows(); j++)
         {
             MatrixXi assoc_row = assoc.block(j,0,1,2);
-            temp_li.block(0,j,10,1) = Li.block(0,assoc_row(0,0),10,1);
-            temp_lj.block(0,j,10,1) = Lj.block(0,assoc_row(0,1),10,1);
+//            temp_li.block(0,j,10,1) = Li.block(0,assoc_row(0,0),10,1);
+//            temp_lj.block(0,j,10,1) = Lj.block(0,assoc_row(0,1),10,1);
+            temp_li.block(0,j,11,1) = Li.block(0,assoc_row(0,0),11,1);
+            temp_lj.block(0,j,11,1) = Lj.block(0,assoc_row(0,1),11,1);
             Z.block(0,j,4,1) = Li.block(0,assoc_row(0,0),4,1);
             Z.block(4,j,4,1) = Lj.block(0,assoc_row(0,1),4,1);
         }
@@ -376,7 +403,6 @@ MatrixXf getTransformationMatrix(MatrixXf left_lines, MatrixXf right_lines)
 
         // find new transformation matrix
         Vector4f new_transf_vec = lsIteration(transf_mat, Z, EPSILON, alpha, GAMMA_SQR);
-        //cout << "Vector4f: " << new_transf_vec.rows() << " " << new_transf_vec.cols() << endl << endl;
         MatrixXf new_transf_mat(3,3);
         new_transf_mat << cos(new_transf_vec(2,0)), -sin(new_transf_vec(2,0)), new_transf_vec(0,0),
                           sin(new_transf_vec(2,0)), cos(new_transf_vec(2,0)), new_transf_vec(1,0),
@@ -385,6 +411,9 @@ MatrixXf getTransformationMatrix(MatrixXf left_lines, MatrixXf right_lines)
         transf_mat = new_transf_mat;
 
     }
+
+    out_li = Li;
+    out_lj = Lj;
 
     // return transformation matrix
     return transf_mat;
