@@ -156,7 +156,7 @@ vector<vecPairsList> selectLines(const vector<vecPairsList> lines)
         }
 
         selectedLines.push_back(new_vpl);
-        cout << "Remaining lines: " << new_vpl.size() << "/" << vpl.size() << endl;
+        //cout << "Remaining lines: " << new_vpl.size() << "/" << vpl.size() << endl;
     }
 
     return selectedLines;
@@ -164,14 +164,14 @@ vector<vecPairsList> selectLines(const vector<vecPairsList> lines)
 
 void printLinesFullDescription(const vector<vecPairsList>& lines_vector, int index)
 {
-    cout << "entrata" << endl;
+    //cout << "entrata" << endl;
     stringstream ss_filename;
     ss_filename << "convertedLines_" << index << ".txt";
     vecPairsList Lines = lines_vector[index];
 
     remove(ss_filename.str().c_str());
     FILE* fid = fopen(ss_filename.str().c_str(), "a");
-    cout << "prima for" << endl;
+    //cout << "prima for" << endl;
 
     for(int counter = 0; counter<(int)Lines.size(); counter++)
     {
@@ -197,7 +197,7 @@ void printLinesFullDescription(const vector<vecPairsList>& lines_vector, int ind
         fputs(ss_lines.str().c_str(), fid);
 
         if(counter == 0){
-            cout << lineRep<< endl << polar << endl << ex_1 << endl << ex_2 << endl << endl;
+            //cout << lineRep<< endl << polar << endl << ex_1 << endl << ex_2 << endl << endl;
         }
 
     }
@@ -250,8 +250,8 @@ void printAssociations(const MatrixXf& Li, const MatrixXf& Lj, const MatrixXf& T
         // get middlepoints
         Vector2f middle_point_i = Li.block(0,i,2,1);
         Vector2f middle_point_j = Lj.block(0,i,2,1);
-        cout << "middlepoints" << endl;
-        cout << middle_point_j << endl << endl;
+        //cout << "middlepoints" << endl;
+        //cout << middle_point_j << endl << endl;
 
         // transform middlepoint j
         MatrixXf transf_mp_j = transformVectors(middle_point_j, T);
@@ -421,7 +421,7 @@ MatrixXi findRepetitions(const MatrixXi& assoc)
         }
     }
 
-    cout << copy_assoc << endl << endl;
+    //cout << copy_assoc << endl << endl;
 
     // output material
     MatrixXi output(1,2);

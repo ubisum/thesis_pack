@@ -156,7 +156,7 @@ Vector4f lsIteration(MatrixXf X, MatrixXf Z, float epsilon, float alpha, float g
     //cout << H << endl << endl;
     //cout << b << endl << endl;
     Vector3f dx = (-H).colPivHouseholderQr().solve(b);
-    cout << dx << endl << endl;
+    //cout << dx << endl << endl;
     MatrixXf DX(3,3);
     DX << cos(dx(2)), -sin(dx(2)), dx(0),
             sin(dx(2)), cos(dx(2)), dx(1),

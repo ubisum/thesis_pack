@@ -57,37 +57,37 @@ int main(int argc, char** argv)
 
     MatrixXf out_li, out_lj;
     MatrixXf transf_mat =  getTransformationMatrix(linesCol_0, linesCol_1, out_li, out_lj);
-    MatrixXf new_lines = mergeLines(linesCol_0, linesCol_1, out_li, out_lj, transf_mat);
+//    MatrixXf new_lines = mergeLines(linesCol_0, linesCol_1, out_li, out_lj, transf_mat);
     printLinesByExtremes(linesCol_0.block(6,0,4,linesCol_0.cols()), MatrixXf::Identity(3,3),"linesCol_0.txt");
     printLinesByExtremes(linesCol_1.block(6,0,4,linesCol_1.cols()), transf_mat, "linesCol_1.txt");
-    printLinesByExtremes(new_lines.block(6,0,4,new_lines.cols()), MatrixXf::Identity(3,3), "new_lines.txt");
+//    printLinesByExtremes(new_lines.block(6,0,4,new_lines.cols()), MatrixXf::Identity(3,3), "new_lines.txt");
     printAssociations(out_li, out_lj, transf_mat, "assoc.txt");
 
 
-    //printLines(linesCol_0.block(6,0,4,linesCol_0.cols()), MatrixXf::Identity(3,3), "convertedLines_0.txt");
-    //printLines(linesCol_1.block(6,0,4,linesCol_1.cols()), MatrixXf::Identity(3,3), "convertedLines_1.txt");
+//    printLines(linesCol_0.block(6,0,4,linesCol_0.cols()), MatrixXf::Identity(3,3), "convertedLines_0.txt");
+//    printLines(linesCol_1.block(6,0,4,linesCol_1.cols()), MatrixXf::Identity(3,3), "convertedLines_1.txt");
 
-    MatrixXf ne_i(6,linesCol_0.cols());
-    ne_i.block(0,0,2,linesCol_0.cols()) = linesCol_0.block(2,0,2,linesCol_0.cols());
-    ne_i.block(2,0,4,linesCol_0.cols()) = linesCol_0.block(6,0,4,linesCol_0.cols());
-    MatrixXf ne_j(6,linesCol_1.cols());
-    ne_j.block(0,0,2,linesCol_1.cols()) = linesCol_1.block(2,0,2,linesCol_1.cols());
-    ne_j.block(2,0,4,linesCol_1.cols()) = linesCol_1.block(6,0,4,linesCol_1.cols());
+//    MatrixXf ne_i(6,linesCol_0.cols());
+//    ne_i.block(0,0,2,linesCol_0.cols()) = linesCol_0.block(2,0,2,linesCol_0.cols());
+//    ne_i.block(2,0,4,linesCol_0.cols()) = linesCol_0.block(6,0,4,linesCol_0.cols());
+//    MatrixXf ne_j(6,linesCol_1.cols());
+//    ne_j.block(0,0,2,linesCol_1.cols()) = linesCol_1.block(2,0,2,linesCol_1.cols());
+//    ne_j.block(2,0,4,linesCol_1.cols()) = linesCol_1.block(6,0,4,linesCol_1.cols());
 
 //    //cout << linesCol_1 << endl;
     //cout << computeDistanceNM(ne_i,ne_j,0.1,0.4,T) << endl;
     //cout << ne_j << endl;
     //cout << linesCol_0.transpose() << endl;
 
-    MatrixXf uno = MatrixXf::Zero(3,3);
-    uno(0,0) = -1;
-    uno(1,1) = -1;
-    uno(2,0) = -1;
-    uno(2,2) = -1;
+//    MatrixXf uno = MatrixXf::Zero(3,3);
+//    uno(0,0) = -1;
+//    uno(1,1) = -1;
+//    uno(2,0) = -1;
+//    uno(2,2) = -1;
     // cout << findMinIndeces(uno) << endl;
     //out << uno.minCoeff() << endl;
-    MatrixXf dist = computeDistanceNM(ne_i, ne_j, 0.1, 0.4, T);
-    MatrixXi assoc = computeAssociations(dist,0.8);
+   // MatrixXf dist = computeDistanceNM(ne_i, ne_j, 0.1, 0.4, T);
+    //MatrixXi assoc = computeAssociations(dist,0.8);
     //cout << assoc + MatrixXi::Constant(assoc.rows(), assoc.cols(),1) << endl << endl;
     //cout << computeAssociations(dist,0.8) << endl;
     //cout << findValueInMatrix(uno, uno.minCoeff()) << endl;
@@ -105,5 +105,22 @@ int main(int argc, char** argv)
     prova_rt << 1,2,3,4,5,6,7,8,9,10;
     cout << prova_rt << endl << endl;
     //cout << transformRT(prova_rt, T) << endl;
+    //MatrixXf merged_lines = mergingIteration(extractedLines);
+//    vector<vecPairsList> prova_vec(extractedLines.begin(), extractedLines.end());
+
+//    MatrixXf merged_lines = mergingIteration(prova_vec);
+//    printLinesByExtremes(merged_lines.block(6,0,4,merged_lines.cols()), MatrixXf::Identity(3,3), "merged_lines.txt");
+//    cout << "Size " << merged_lines.rows() << " " << merged_lines.cols() << endl;
+//    cout << "size prova_vec " << prova_vec.size() << endl << endl;
+//    Vector4f line(3,5,5,5);
+//    Vector4f new_segment(10,5,20,5);
+//    Vector2f point(1,-5);
+//    Vector2f projected = projectPoint(line, point);
+//    cout << projected << endl << endl;
+//    cout << "Posizione punto: " << getPointPosition(line, projected) << endl;
+//    cout << obtainNewExtremes(line,new_segment) << endl;
+
+    //MatrixXf test = prova_rt.block(0,0,2,2);
+    cout << endl << removeColumn(prova_rt,9) << endl;
 
 }
