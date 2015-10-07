@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     cout << prova_rt << endl << endl;
     //cout << transformRT(prova_rt, T) << endl;
     //MatrixXf merged_lines = mergingIteration(extractedLines);
-//    vector<vecPairsList> prova_vec(extractedLines.begin(), extractedLines.end());
+    //vector<vecPairsList> prova_vec(extractedLines.begin()+1, extractedLines.begin()+2);
 
 //    MatrixXf merged_lines = mergingIteration(prova_vec);
 //    printLinesByExtremes(merged_lines.block(6,0,4,merged_lines.cols()), MatrixXf::Identity(3,3), "merged_lines.txt");
@@ -121,6 +121,10 @@ int main(int argc, char** argv)
 //    cout << obtainNewExtremes(line,new_segment) << endl;
 
     //MatrixXf test = prova_rt.block(0,0,2,2);
-    cout << endl << removeColumn(prova_rt,9) << endl;
+    //cout << endl << removeColumn(prova_rt,9) << endl;
+   MatrixXf final_lines = mergeLines(extractedLines);
+   cout << "Final lines " << final_lines.rows() << " " << final_lines.cols() << endl;
+   printLinesByExtremes(final_lines.block(6,0,4,final_lines.cols()), MatrixXf::Identity(3,3), "final_lines.txt");
+   // cout << "Lunghezza test: " << prova_vec.size() << endl;
 
 }

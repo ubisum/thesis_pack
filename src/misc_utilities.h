@@ -210,29 +210,33 @@ void printLinesByExtremes(MatrixXf lines, MatrixXf T, string file_name)
     remove(file_name.c_str());
     FILE* fid = fopen(file_name.c_str(), "a");
 
-    // loop over points
-    for(int i = 0; i<lines.cols(); i++)
+    if(lines.rows() == 4 && lines.cols() > 0)
     {
-        // create temporary matrices
-        MatrixXf temp1 = MatrixXf::Constant(3,1,1);
-        MatrixXf temp2 = MatrixXf::Constant(3,1,1);
+        // loop over points
+        for(int i = 0; i<lines.cols(); i++)
+        {
+            // create temporary matrices
+            MatrixXf temp1 = MatrixXf::Constant(3,1,1);
+            MatrixXf temp2 = MatrixXf::Constant(3,1,1);
 
-        // fill temporary matrices
-        temp1.block(0,0,2,1) = lines.block(0,i,2,1);
-        temp2.block(0,0,2,1) = lines.block(2,i,2,1);
+            // fill temporary matrices
+            temp1.block(0,0,2,1) = lines.block(0,i,2,1);
+            temp2.block(0,0,2,1) = lines.block(2,i,2,1);
 
-        // products
-        Vector3f prod1 = T*temp1;
-        Vector3f prod2 = T*temp2;
+            // products
+            Vector3f prod1 = T*temp1;
+            Vector3f prod2 = T*temp2;
 
-        // write to file
-        stringstream toTheFile;
-        toTheFile << prod1(0) << "\t" << prod1(1) << "\n" <<
-                     prod2(0) << "\t" << prod2(1) << "\n\n";
+            // write to file
+            stringstream toTheFile;
+            toTheFile << prod1(0) << "\t" << prod1(1) << "\n" <<
+                         prod2(0) << "\t" << prod2(1) << "\n\n";
 
-        fputs(toTheFile.str().c_str(), fid);
+            fputs(toTheFile.str().c_str(), fid);
 
+        }
     }
+
 
     fclose(fid);
 }

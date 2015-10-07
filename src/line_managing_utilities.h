@@ -61,6 +61,11 @@ int getPointPosition(Vector4f line_extremes, Vector2f projected_point)
 
 MatrixXf obtainNewExtremes(Vector4f line_left, Vector4f line_right)
 {
+    //cout << line_left << endl << endl;
+    //cout << line_right << endl << endl;
+    cout << line_left.rows() << " " << line_left.cols() << endl;
+    cout << line_right.rows() << " " << line_right.cols() << endl;
+    cout << "__________________" << endl;
     // isolate right extremes
     Vector2f right_ex1 = line_right.block(0,0,2,1);
     Vector2f right_ex2 = line_right.block(2,0,2,1);
@@ -74,27 +79,35 @@ MatrixXf obtainNewExtremes(Vector4f line_left, Vector4f line_right)
 
     if((pos_ex1 == 1 && pos_ex2 == 1) || (pos_ex1 == -1 && pos_ex2 == -1))
     {
-        output = MatrixXf::Zero(4,2);
-        output.block(0,0,4,1) = line_left;
-        output.block(0,1,4,1) = line_right;
+//        MatrixXf output = MatrixXf::Zero(4,1);
+//        output.block(0,0,4,1) = line_left;
+//        output.block(0,1,4,1) = line_right;
+//        MatrixXf two_cols = MatrixXf::Zero(4,2);
+//        two_cols.block(0,0,4,1) = line_left;
+//        two_cols.block(0,1,4,1) = line_right;
+//        return two_cols
+//        output = two_cols;
+//        return output;
     }
 
     else
     {
-        output = MatrixXf::Zero(4,1);
-        output.block(0,0,4,1) = line_left;
+//        MatrixXf output = MatrixXf::Zero(4,1);
+//        output.block(0,0,4,1) = line_left;
 
-        if(pos_ex1 == -1)
-            output.block(0,0,2,1) = right_ex1;
+//        if(pos_ex1 == -1)
+//            output.block(0,0,2,1) = right_ex1;
 
-        else if(pos_ex1 == 1)
-            output.block(2,0,2,1) = right_ex1;
+//        else if(pos_ex1 == 1)
+//            output.block(2,0,2,1) = right_ex1;
 
-        if(pos_ex2 == -1)
-            output.block(0,0,2,1) = right_ex2;
+//        if(pos_ex2 == -1)
+//            output.block(0,0,2,1) = right_ex2;
 
-        else if(pos_ex2 == 1)
-            output.block(2,0,2,1) = right_ex2;
+//        else if(pos_ex2 == 1)
+//            output.block(2,0,2,1) = right_ex2;
+
+//        return output;
     }
 
     return output;
@@ -115,7 +128,6 @@ MatrixXf removeColumn(MatrixXf mat, int index)
     if(mat.cols() > 1)
     {
         output = MatrixXf::Zero(mat.rows(), mat.cols()-1);
-        cout << output << endl;
 
         for(int i = 0; i<index; i++)
             output.block(0,i,mat.rows(),1) = mat.block(0,i,mat.rows(),1);
@@ -127,135 +139,191 @@ MatrixXf removeColumn(MatrixXf mat, int index)
     return output;
 }
 
-MatrixXf mergeLines(MatrixXf left_lines, MatrixXf right_lines, MatrixXf transf_mat)
+MatrixXf mergingIteration(MatrixXf left_lines, MatrixXf right_lines, MatrixXf transf_mat)
 {
     // constants
     MatrixXf copy_left = left_lines;
     MatrixXf output;
+    remove("transf_rx.txt");
 
     for(int i = 0; i<right_lines.cols(); i++)
     {
-        // right normal
-        Vector2f right_normal= right_lines.block(2,i,2,1);
+//        // right normal
+//        Vector2f right_normal= right_lines.block(2,i,2,1);
 
-        // transform right normal
-        Vector2f transf_right_normal = transf_mat.block(0,0,2,2)*right_normal;
+//        // transform right normal
+//        Vector2f transf_right_normal = transf_mat.block(0,0,2,2)*right_normal;
 
-        // right middlepoint
-        Vector2f right_middlepoint = right_lines.block(0,i,2,1);
+//        // right middlepoint
+//        Vector2f right_middlepoint = right_lines.block(0,i,2,1);
 
-        // transform right middlepoint
-        Vector2f rx_mp_transf = transformPoints(right_middlepoint, transf_mat);
+//        // transform right middlepoint
+//        Vector2f rx_mp_transf = transformVectors(right_middlepoint, transf_mat);
 
-        // transform right extremes
-        Vector4f transf_rx = Vector4f::Zero(4,1);
-        transf_rx.block(0,0,2,1) = transformPoints(right_lines.block(6,i,2,1), transf_mat);
-        transf_rx.block(2,0,2,1) = transformPoints(right_lines.block(8,i,2,1), transf_mat);
+//        // transform right extremes
+//        Vector4f transf_rx = Vector4f::Zero(4,1);
+//        transf_rx.block(0,0,2,1) = transformVectors(right_lines.block(6,i,2,1), transf_mat);
+//        transf_rx.block(2,0,2,1) = transformVectors(right_lines.block(8,i,2,1), transf_mat);
 
-        // merged lines
-        MatrixXf merged_lines;
-        int column_index = -1;
+//        // merged lines
+//        MatrixXf merged_lines;
+//        int column_index = -1;
 
-        for(int j = 0; j<copy_left.cols(); j++)
-        {
-            // left normal
-            Vector2f left_normal = copy_left.block(2,j,2,1);
+//        for(int j = 0; j<copy_left.cols(); j++)
+//        {
+//            // left normal
+//            Vector2f left_normal = copy_left.block(2,j,2,1);
 
-            // difference between normals
-            Vector2f normal_diff = left_normal-transf_right_normal;
+//            // difference between normals
+//            Vector2f normal_diff = left_normal-transf_right_normal;
 
-            // difference between middlepoints
-            Vector2f mp_diff = rx_mp_transf - copy_left.block(0,j,2,1);
+//            // difference between middlepoints
+//            Vector2f mp_diff = rx_mp_transf - copy_left.block(0,j,2,1);
 
-            if(normal_diff.squaredNorm() < NORM_THRESHOLD && mp_diff.squaredNorm() < MP_THRESHOLD)
-            {
-                // new extremes
-                merged_lines = obtainNewExtremes(copy_left.block(6,j,4,1), transf_rx);
+//            if(normal_diff.squaredNorm() < NORM_THRESHOLD && mp_diff.squaredNorm() < MP_THRESHOLD)
+//            {
+//                // new extremes
+//                cout << "prima" << endl;
+//                //merged_lines = obtainNewExtremes(copy_left.block(6,j,4,1), transf_rx);
+//                cout << "dopo" << endl;
+//                //cout << merged_lines << endl << endl;
 
-                // save index
-                column_index = j;
+//                // save index
+//                column_index = j;
 
-                // exit loop
-                break;
-            }
-        }
+//                // exit loop
+//                break;
+//            }
+//        }
 
         // add merged lines
-        if(merged_lines.cols() > 0)
-        {
-            // new lines
-            MatrixXf matrix_to_add;
+//        if(merged_lines.cols() > 0)
+//        {
+//            // new lines
+//            MatrixXf matrix_to_add;
 
-            if(merged_lines.cols() == 1)
-            {
-                // create a new column
-                MatrixXf new_line = MatrixXf::Zero(10,1);
+//            if(merged_lines.cols() == 1)
+//            {
+//                // create a new column
+//                MatrixXf new_line = MatrixXf::Zero(10,1);
 
-                // fill column
-                new_line.block(0,0,2,1) = middlepoint(merged_lines.block(0,0,2,1), merged_lines.block(2,0,2,1));
-                new_line.block(2,0,4,1) = copy_left.block(2,column_index,4,1);
-                new_line.block(4,0,2,1) = left_lines.block(4,column_index,2,1);
-                new_line.block(6,0,4,1) = merged_lines;
+//                // fill column
+//                new_line.block(0,0,2,1) = middlepoint(merged_lines.block(0,0,2,1), merged_lines.block(2,0,2,1));
+//                new_line.block(2,0,2,1) = copy_left.block(2,column_index,2,1);
+//                new_line.block(4,0,2,1) = copy_left.block(4,column_index,2,1);
+//                new_line.block(6,0,4,1) = merged_lines;
 
-                // save
-                matrix_to_add = new_line;
-            }
+//                // save
+//                matrix_to_add = new_line;
+//            }
 
-            else if(merged_lines.cols() == 2)
-            {
-                // create a new column
-                MatrixXf new_line = MatrixXf::Zero(10,1);
+//            else if(merged_lines.cols() == 2)
+//            {
+//                // create a new column
+//                MatrixXf new_line = MatrixXf::Zero(10,1);
 
-                // fill column
-                new_line.block(0,0,2,1) = rx_mp_transf;
-                new_line.block(2,0,2,1) = transf_right_normal;
-                new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
-                new_line.block(6,0,4,1) = transf_rx;
+//                // fill column
+//                new_line.block(0,0,2,1) = rx_mp_transf;
+//                new_line.block(2,0,2,1) = transf_right_normal;
+//                new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
+//                new_line.block(6,0,4,1) = transf_rx;
 
-                // update
-                merged_lines.block(0,1,10,1) = new_line;
+//                // update
+//                merged_lines.block(0,1,10,1) = new_line;
 
-                // save
-                matrix_to_add = merged_lines;
-            }
+//                // save
+//                matrix_to_add = merged_lines;
+//            }
 
-            // add lines
-            MatrixXf updated_lines = MatrixXf::Zero(output.rows(), output.cols() + matrix_to_add.cols());
-            updated_lines.block(0,0,output.rows(), output.cols()) = output;
-            updated_lines.block(0, output.cols(), output.rows(), matrix_to_add.cols()) = matrix_to_add;
-            output = updated_lines;
+//            // add lines
+//            if(output.rows() == 0)
+//                output = matrix_to_add;
 
-            // remove column
-            removeColumn(copy_left,column_index);
+//            else
+//            {
+//                MatrixXf updated_lines = MatrixXf::Zero(10, output.cols() + matrix_to_add.cols());
+//                updated_lines.block(0,0, output.rows(), output.cols()) = output;
+//                updated_lines.block(0, output.cols(), output.rows(), matrix_to_add.cols()) = matrix_to_add;
+//                output = updated_lines;
+//            }
 
-        }
+//            // remove column
+//            removeColumn(copy_left,column_index);
 
-        // no match in left scan
-        else
-        {
-            // create a new column
-            MatrixXf new_line = MatrixXf::Zero(10,1);
+//        }
 
-            // fill column
-            new_line.block(0,0,2,1) = rx_mp_transf;
-            new_line.block(2,0,2,1) = transf_right_normal;
-            new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
-            new_line.block(6,0,4,1) = transf_rx;
+//        // no match in left scan
+//        else
+//        {
+//            if(output.rows() == 0)
+//                output = right_lines.block(0,i,10,1);
 
-            // create a new matrix of lines
-            MatrixXf updated_lines = MatrixXf::Zero(output.rows(), output.cols() + 1);
-            updated_lines.block(0,0,output.rows(), output.cols()) = output;
-            updated_lines.block(0,output.cols(), 10, 1) = new_line;
+//            else
+//            {
+//                // create a new column
+//                MatrixXf new_line = MatrixXf::Zero(10,1);
 
-            // save
-            output = updated_lines;
+//                // fill column
+//                new_line.block(0,0,2,1) = rx_mp_transf;
+//                new_line.block(2,0,2,1) = transf_right_normal;
+//                new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
+//                new_line.block(6,0,4,1) = transf_rx;
 
-        }
+//                // create a new matrix of lines
+//                MatrixXf updated_lines = MatrixXf::Zero(output.rows(), output.cols() + 1);
+//                updated_lines.block(0,0,output.rows(), output.cols()) = output;
+//                updated_lines.block(0,output.cols(), 10, 1) = new_line;
+
+//                // save
+//                output = updated_lines;
+//            }
+
+//        }
 
     }
 
     // return lines
+    //cout << "Final lines " << output.rows() << " " << output.cols() << endl;
     return output;
+}
+
+MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
+{
+    MatrixXf final_lines;
+
+    if(extractedLines.size() == 1)
+        final_lines = linesByCol(extractedLines,0);
+
+    else if (extractedLines.size() > 1)
+    {
+        // final lines
+        final_lines = linesByCol(extractedLines,0);
+
+        for(int i = 1; i<(int)extractedLines.size(); i++)
+        {
+            if(i < 2)
+            {
+                // get lines in matrix form
+                MatrixXf current_lines = linesByCol(extractedLines,i);
+
+                // get current transformation matrix
+                MatrixXf out_li, out_lj;
+                MatrixXf T = getTransformationMatrix(final_lines, current_lines, out_li, out_lj);
+
+                // merge current lines
+                MatrixXf merged_lines = mergingIteration(final_lines, current_lines, T);
+
+                // update
+                final_lines = MatrixXf::Zero(merged_lines.rows(), merged_lines.cols());
+                final_lines.block(0,0,merged_lines.rows(), merged_lines.cols()) = merged_lines;
+            }
+
+        }
+    }
+
+    // return final lines
+    //cout << "Final lines " << final_lines.rows() << " " << final_lines.cols() << endl;
+    return final_lines;
 }
 
 }
