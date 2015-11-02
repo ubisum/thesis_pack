@@ -3,8 +3,11 @@
 
 #include "least_squares_utilities.h"
 #include "misc_utilities.h"
-#define NORM_THRESHOLD 0.1*0.1
-#define MP_THRESHOLD 0.1*0.1
+
+#define NORM_THRESHOLD 0.8
+#define MP_THRESHOLD pow(10,-3)
+#define ANGLE_THRESHOLD 5*M_PI/180
+#define RHO_THRESHOLD 0.1
 
 using namespace least_squares;
 using namespace utilities;
@@ -12,12 +15,40 @@ using namespace utilities;
 namespace utilities
 {
 
+typedef pair<int, float> norm_index;
+typedef pair<int, int> indeces_pair;
+
 Vector2f middlepoint(Vector2f point_a, Vector2f point_b)
 {
     Vector2f mp;
-    mp << point_a(0)-point_b(0), point_a(1)-point_b(1);
+    mp << point_a(0)+point_b(0), point_a(1)+point_b(1);
 
     return 0.5*mp;
+}
+
+norm_index findClosestNorm(MatrixXf matrix_of_normals, Vector2f norm)
+{
+    if(matrix_of_normals.cols() == 0)
+        return norm_index(-1,-1);
+
+    else
+    {
+        int min_index = 0;
+        float min_sq_normal = (matrix_of_normals.block(0,0,2,1)-norm).squaredNorm();
+
+        for(int i = 1; i<matrix_of_normals.cols(); i++)
+        {
+            float temp_diff = (matrix_of_normals.block(0,i,2,1)-norm).squaredNorm();
+            if(temp_diff < min_sq_normal)
+            {
+                min_index = i;
+                min_sq_normal = temp_diff;
+            }
+        }
+
+        return norm_index(min_index, min_sq_normal);
+    }
+
 }
 
 Vector2f projectPoint(Vector4f line_extremes, Vector2f point)
@@ -28,21 +59,18 @@ Vector2f projectPoint(Vector4f line_extremes, Vector2f point)
     float x2 = line_extremes(2);
     float y2 = line_extremes(3);
 
-    // compute coefficients m and b
-    float m = -(y2-y1)/(x1-x2);
-    float b = y1-m*x1;
-
-    // projection
-    Vector2f projection;
-    projection << (m*point(1) + point(0) - m*b) / (m*m + 1),
-                  (m*m*point(1) + m*point(0) + b) / (m*m + 1);
+    Vector2f ab = -(Vector2f(x1, y1)-Vector2f(x2, y2));
+    Vector2f projection = point.dot(ab)/ ab.dot(ab) * ab;
 
     // return projection
     return projection;
 }
 
-int getPointPosition(Vector4f line_extremes, Vector2f projected_point)
+int getPointPosition(Vector4f line_extremes, Vector2f point)
 {
+    // project point
+    Vector2f projected_point = projectPoint(line_extremes,point);
+
     // isolate coordinates
     float xa = line_extremes(0);
     float xb = line_extremes(2);
@@ -61,17 +89,12 @@ int getPointPosition(Vector4f line_extremes, Vector2f projected_point)
 
 MatrixXf obtainNewExtremes(Vector4f line_left, Vector4f line_right)
 {
-    //cout << line_left << endl << endl;
-    //cout << line_right << endl << endl;
-    cout << line_left.rows() << " " << line_left.cols() << endl;
-    cout << line_right.rows() << " " << line_right.cols() << endl;
-    cout << "__________________" << endl;
     // isolate right extremes
     Vector2f right_ex1 = line_right.block(0,0,2,1);
     Vector2f right_ex2 = line_right.block(2,0,2,1);
 
     // positions of extremes
-    int pos_ex1 = getPointPosition(line_left,right_ex1);
+    int pos_ex1 = getPointPosition(line_left, right_ex1);
     int pos_ex2 = getPointPosition(line_left, right_ex2);
 
     // output matrix
@@ -79,35 +102,37 @@ MatrixXf obtainNewExtremes(Vector4f line_left, Vector4f line_right)
 
     if((pos_ex1 == 1 && pos_ex2 == 1) || (pos_ex1 == -1 && pos_ex2 == -1))
     {
-//        MatrixXf output = MatrixXf::Zero(4,1);
-//        output.block(0,0,4,1) = line_left;
-//        output.block(0,1,4,1) = line_right;
-//        MatrixXf two_cols = MatrixXf::Zero(4,2);
-//        two_cols.block(0,0,4,1) = line_left;
-//        two_cols.block(0,1,4,1) = line_right;
-//        return two_cols
-//        output = two_cols;
-//        return output;
+        //cout << "Caso 1" << endl;
+        output = MatrixXf::Zero(4,2);
+        output.block(0,0,4,1) = line_left;
+        output.block(0,1,4,1) = line_right;
+    }
+
+    else if(pos_ex1 == 0 && pos_ex2 == 0)
+    {
+        //cout << "Caso 2" << endl;
+        output = MatrixXf::Zero(4,1);
+        output = line_left;
     }
 
     else
     {
-//        MatrixXf output = MatrixXf::Zero(4,1);
-//        output.block(0,0,4,1) = line_left;
+        //cout << "Merging lines" << endl;
+        output = MatrixXf::Zero(4,1);
+        output.block(0,0,4,1) = line_left;
 
-//        if(pos_ex1 == -1)
-//            output.block(0,0,2,1) = right_ex1;
+        if(pos_ex1 == -1)
+            output.block(0,0,2,1) = right_ex1;
 
-//        else if(pos_ex1 == 1)
-//            output.block(2,0,2,1) = right_ex1;
+        else if(pos_ex1 == 1)
+            output.block(2,0,2,1) = right_ex1;
 
-//        if(pos_ex2 == -1)
-//            output.block(0,0,2,1) = right_ex2;
+        if(pos_ex2 == -1)
+            output.block(0,0,2,1) = right_ex2;
 
-//        else if(pos_ex2 == 1)
-//            output.block(2,0,2,1) = right_ex2;
+        else if(pos_ex2 == 1)
+            output.block(2,0,2,1) = right_ex2;
 
-//        return output;
     }
 
     return output;
@@ -139,156 +164,99 @@ MatrixXf removeColumn(MatrixXf mat, int index)
     return output;
 }
 
-MatrixXf mergingIteration(MatrixXf left_lines, MatrixXf right_lines, MatrixXf transf_mat)
+vector<indeces_pair> mergingIteration(MatrixXf left_lines, MatrixXf right_lines, MatrixXf T)
 {
-    // constants
-    MatrixXf copy_left = left_lines;
-    MatrixXf output;
-    remove("transf_rx.txt");
+    remove("mergeIteration.txt");
+    remove("mp_lines.txt");
+    FILE* merge_file = fopen("mergeIteration.txt", "a");
+    FILE* mp_file = fopen("mp_lines.txt", "a");
+    vector<indeces_pair> pairs_list;
 
     for(int i = 0; i<right_lines.cols(); i++)
     {
-//        // right normal
-//        Vector2f right_normal= right_lines.block(2,i,2,1);
+        // rotate normal
+        Vector2f rot_normal = T.block(0,0,2,2)*right_lines.block(2,i,2,1);
 
-//        // transform right normal
-//        Vector2f transf_right_normal = transf_mat.block(0,0,2,2)*right_normal;
+        for(int j = 0; j<left_lines.cols(); j++)
+        {
+            // left normal
+            Vector2f left_normal = left_lines.block(2,j,2,1);
 
-//        // right middlepoint
-//        Vector2f right_middlepoint = right_lines.block(0,i,2,1);
+            if(rot_normal.transpose()*left_normal > NORM_THRESHOLD)
+            {
+                stringstream ss_lines, ss_mp;
 
-//        // transform right middlepoint
-//        Vector2f rx_mp_transf = transformVectors(right_middlepoint, transf_mat);
+                // transform points
+                Vector2f mp_rot = transformVectors(right_lines.block(0,i,2,1), T);
+                Vector2f ex1_rot = transformVectors(right_lines.block(6,i,2,1), T);
+                Vector2f ex2_rot = transformVectors(right_lines.block(8,i,2,1), T);
 
-//        // transform right extremes
-//        Vector4f transf_rx = Vector4f::Zero(4,1);
-//        transf_rx.block(0,0,2,1) = transformVectors(right_lines.block(6,i,2,1), transf_mat);
-//        transf_rx.block(2,0,2,1) = transformVectors(right_lines.block(8,i,2,1), transf_mat);
+                // write middlepoints to file
+                Vector2f left_mp = left_lines.block(0,j,2,1);
+                ss_mp << left_mp(0) << "\t" << left_mp(1) << "\n" <<
+                           mp_rot(0) << "\t" << mp_rot(1) << "\n\n";
+                fputs(ss_mp.str().c_str(), mp_file);
 
-//        // merged lines
-//        MatrixXf merged_lines;
-//        int column_index = -1;
+                // write lines to file
+                Vector2f left_ex1 = left_lines.block(6,j,2,1);
+                Vector2f left_ex2 = left_lines.block(8,j,2,1);
 
-//        for(int j = 0; j<copy_left.cols(); j++)
-//        {
-//            // left normal
-//            Vector2f left_normal = copy_left.block(2,j,2,1);
+                ss_lines << left_ex1(0) << "\t" << left_ex1(1) << "\n" <<
+                            left_ex2(0) << "\t" << left_ex2(1) << "\n\n" <<
+                            ex1_rot(0) << "\t" << ex1_rot(1) << "\n" <<
+                            ex2_rot(0) << "\t" << ex2_rot(1) << "\n\n";
+                fputs(ss_lines.str().c_str(), merge_file);
 
-//            // difference between normals
-//            Vector2f normal_diff = left_normal-transf_right_normal;
-
-//            // difference between middlepoints
-//            Vector2f mp_diff = rx_mp_transf - copy_left.block(0,j,2,1);
-
-//            if(normal_diff.squaredNorm() < NORM_THRESHOLD && mp_diff.squaredNorm() < MP_THRESHOLD)
-//            {
-//                // new extremes
-//                cout << "prima" << endl;
-//                //merged_lines = obtainNewExtremes(copy_left.block(6,j,4,1), transf_rx);
-//                cout << "dopo" << endl;
-//                //cout << merged_lines << endl << endl;
-
-//                // save index
-//                column_index = j;
-
-//                // exit loop
-//                break;
-//            }
-//        }
-
-        // add merged lines
-//        if(merged_lines.cols() > 0)
-//        {
-//            // new lines
-//            MatrixXf matrix_to_add;
-
-//            if(merged_lines.cols() == 1)
-//            {
-//                // create a new column
-//                MatrixXf new_line = MatrixXf::Zero(10,1);
-
-//                // fill column
-//                new_line.block(0,0,2,1) = middlepoint(merged_lines.block(0,0,2,1), merged_lines.block(2,0,2,1));
-//                new_line.block(2,0,2,1) = copy_left.block(2,column_index,2,1);
-//                new_line.block(4,0,2,1) = copy_left.block(4,column_index,2,1);
-//                new_line.block(6,0,4,1) = merged_lines;
-
-//                // save
-//                matrix_to_add = new_line;
-//            }
-
-//            else if(merged_lines.cols() == 2)
-//            {
-//                // create a new column
-//                MatrixXf new_line = MatrixXf::Zero(10,1);
-
-//                // fill column
-//                new_line.block(0,0,2,1) = rx_mp_transf;
-//                new_line.block(2,0,2,1) = transf_right_normal;
-//                new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
-//                new_line.block(6,0,4,1) = transf_rx;
-
-//                // update
-//                merged_lines.block(0,1,10,1) = new_line;
-
-//                // save
-//                matrix_to_add = merged_lines;
-//            }
-
-//            // add lines
-//            if(output.rows() == 0)
-//                output = matrix_to_add;
-
-//            else
-//            {
-//                MatrixXf updated_lines = MatrixXf::Zero(10, output.cols() + matrix_to_add.cols());
-//                updated_lines.block(0,0, output.rows(), output.cols()) = output;
-//                updated_lines.block(0, output.cols(), output.rows(), matrix_to_add.cols()) = matrix_to_add;
-//                output = updated_lines;
-//            }
-
-//            // remove column
-//            removeColumn(copy_left,column_index);
-
-//        }
-
-//        // no match in left scan
-//        else
-//        {
-//            if(output.rows() == 0)
-//                output = right_lines.block(0,i,10,1);
-
-//            else
-//            {
-//                // create a new column
-//                MatrixXf new_line = MatrixXf::Zero(10,1);
-
-//                // fill column
-//                new_line.block(0,0,2,1) = rx_mp_transf;
-//                new_line.block(2,0,2,1) = transf_right_normal;
-//                new_line.block(4,0,2,1) = transformRT(right_lines.block(4,i,2,1), transf_mat);
-//                new_line.block(6,0,4,1) = transf_rx;
-
-//                // create a new matrix of lines
-//                MatrixXf updated_lines = MatrixXf::Zero(output.rows(), output.cols() + 1);
-//                updated_lines.block(0,0,output.rows(), output.cols()) = output;
-//                updated_lines.block(0,output.cols(), 10, 1) = new_line;
-
-//                // save
-//                output = updated_lines;
-//            }
-
-//        }
-
+                pairs_list.push_back(indeces_pair(j, i));
+            }
+        }
     }
 
-    // return lines
-    //cout << "Final lines " << output.rows() << " " << output.cols() << endl;
-    return output;
+    fclose(merge_file);
+    fclose(mp_file);
+
+    return pairs_list;
+}
+
+void evaluateByRho(vector<indeces_pair> indeces, MatrixXf left_lines, MatrixXf right_lines, MatrixXf T)
+{
+    remove("evaluate_rho.txt");
+    FILE* rho_fid = fopen("evaluate_rho.txt", "a");
+
+    for(int i = 0; i<(int)indeces.size(); i++)
+    {
+        // get a pair
+        indeces_pair ip = indeces[i];
+        cout << ip.first << " " << ip.second << endl;
+
+        // get left rho
+        float left_rho = left_lines(4, ip.first);
+
+        // get right rho
+        Vector2f rt_rot = transformRT(right_lines.block(4,ip.second,2,1), T);
+        float right_rho = rt_rot(0);
+
+        if(fabs(right_rho-left_rho) < RHO_THRESHOLD)
+        {
+            stringstream ss_rho;
+
+            // transform right middlepoint
+            Vector2f mp_transf = transformVectors(right_lines.block(0, ip.second, 2, 1), T);
+            Vector2f left_mp = left_lines.block(0,ip.first,2,1);
+            // write to file
+            ss_rho << left_mp(0) << "\t" << left_mp(1) << "\n" <<
+                      mp_transf(0) << "\t" << mp_transf(1) << "\n\n";
+
+            fputs(ss_rho.str().c_str(), rho_fid);
+        }
+    }
+
+    fclose(rho_fid);
 }
 
 MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
 {
+
     MatrixXf final_lines;
 
     if(extractedLines.size() == 1)
@@ -298,31 +266,36 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
     {
         // final lines
         final_lines = linesByCol(extractedLines,0);
-
+        printLinesByExtremes(final_lines.block(6,0,4, final_lines.cols()), MatrixXf::Identity(3,3), "convertedLines_0.txt");
         for(int i = 1; i<(int)extractedLines.size(); i++)
         {
-            if(i < 2)
-            {
+//            if(i < 2)
+//            {
                 // get lines in matrix form
                 MatrixXf current_lines = linesByCol(extractedLines,i);
 
                 // get current transformation matrix
                 MatrixXf out_li, out_lj;
                 MatrixXf T = getTransformationMatrix(final_lines, current_lines, out_li, out_lj);
+                printLinesByExtremes(current_lines.block(6,0,4,current_lines.cols()), T, "convertedLines_1.txt");
 
                 // merge current lines
-                MatrixXf merged_lines = mergingIteration(final_lines, current_lines, T);
+                vector<indeces_pair> pairs = mergingIteration(final_lines, current_lines, T);
+                evaluateByRho(pairs, final_lines, current_lines, T);
+                //cout << merged_lines.rows() << " " << merged_lines.cols() << endl;
+                //cout << final_lines.rows() << " " << final_lines.cols() << endl;
+                cout << "Dopo Merged Lines" << endl;
 
                 // update
-                final_lines = MatrixXf::Zero(merged_lines.rows(), merged_lines.cols());
-                final_lines.block(0,0,merged_lines.rows(), merged_lines.cols()) = merged_lines;
-            }
+//                final_lines = MatrixXf::Zero(merged_lines.rows(), merged_lines.cols());
+//                final_lines.block(0,0,merged_lines.rows(), merged_lines.cols()) = merged_lines;
+                //final_lines = merged_lines;
+//            }
 
         }
     }
 
     // return final lines
-    //cout << "Final lines " << final_lines.rows() << " " << final_lines.cols() << endl;
     return final_lines;
 }
 
