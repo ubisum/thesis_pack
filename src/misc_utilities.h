@@ -61,6 +61,29 @@ MatrixXf transformVectors(MatrixXf vectors, MatrixXf T)
     return product.block(0,0,vectors.rows(),vectors.cols());
 }
 
+MatrixXf transformFullLine(MatrixXf line, MatrixXf T)
+{
+    // output
+    MatrixXf output;
+
+    if(line.rows() != 10)
+        cerr << "Number of rows is not equal to 10" << endl;
+
+    else
+    {
+        output = MatrixXf::Zero(10,1);
+        output.block(0,0,2,1) = transformVectors(line.block(0,0,2,1), T);
+        output.block(2,0,2,1) = T.block(0,0,2,2)*line.block(2,0,2,1);
+        output.block(4,0,2,1) = transformRT(line.block(4,0,2,1), T);
+        output.block(6,0,2,1) = transformVectors(line.block(6,0,2,1), T);
+        output.block(8,0,2,1) = transformVectors(line.block(8,0,2,1), T);
+    }
+
+    return output;
+
+
+}
+
 void parseRobotInfo(string file_name, vector<completeInformation>& ci)
 {
     ifstream file(file_name.c_str());

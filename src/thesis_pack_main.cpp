@@ -44,8 +44,18 @@ int main(int argc, char** argv)
         extractedLines.push_back(computeLines(vector));
     }
 
-    vector<vecPairsList> reducedVector(extractedLines.begin()+1, extractedLines.begin()+3);
-    MatrixXf m = mergeLines(reducedVector);
+    Vector4f a(15,12,24,20);
+    obtainNewExtremes(a,Vector4f(15,16,19,22));
+    cout << "Projection " << endl << projectPoint(Vector4f(15,12,24,20), Vector2f(10,14)) << endl;
+
+//    vector<vecPairsList> reducedVector(extractedLines.begin()+1, extractedLines.begin()+2);
+    int init = 0;
+    int end = 1;
+    vector<vecPairsList> reducedVector;
+    for(int k = init; k<= end; k++)
+        reducedVector.push_back(extractedLines[k]);
+    //MatrixXf m = mergeLines(reducedVector);
+    MatrixXf m = mergeLines(extractedLines);
     cout << "Size m: " << m.rows() << " " << m.cols() << endl;
     printLinesByExtremes(m.block(6,0,4,m.cols()), MatrixXf::Identity(3,3), "merged_lines.txt");
 
