@@ -10,6 +10,35 @@
 using namespace utilities;
 using namespace least_squares;
 
+vector<vecPairsList> createVector()
+{
+    vecPair left1(Vector2f(2,1), Vector2f(5,1));
+    vecPair left2(Vector2f(2,1), Vector2f(2,3));
+
+//    vecPair right1(Vector2f(2.01,1.01), Vector2f(5.01,1.01));
+//    vecPair right2(Vector2f(2.01,1.01), Vector2f(2.01,3.01));
+
+        vecPair right1(Vector2f(3,2), Vector2f(6,2));
+        vecPair right2(Vector2f(3,2), Vector2f(3,4));
+
+    vecPairsList vpl1;
+    vpl1.push_back(left1);
+    vpl1.push_back(left2);
+
+    vecPairsList vpl2;
+    vpl2.push_back(right1);
+    vpl2.push_back(right2);
+
+    //return vector<vecPairsList>(vpl1, vpl2);
+    vector<vecPairsList> output;
+    output.push_back(vpl1);
+    output.push_back(vpl2);
+
+    return output;
+
+
+}
+
 int main(int argc, char** argv)
 {
     // data
@@ -46,7 +75,9 @@ int main(int argc, char** argv)
 
     Vector4f a(15,12,24,20);
     obtainNewExtremes(a,Vector4f(15,16,19,22));
-    cout << "Projection " << endl << projectPoint(Vector4f(15,12,24,20), Vector2f(10,14)) << endl;
+    //cout << "Projection " << endl << projectPoint(Vector4f(15,12,24,20), Vector2f(10,14)) << endl;
+
+     cout << "Projection " << endl << projectByEquation(Vector3f(2,-1,0), Vector2f(2,3)) << endl;
 
 //    vector<vecPairsList> reducedVector(extractedLines.begin()+1, extractedLines.begin()+2);
     int init = 0;
@@ -54,15 +85,51 @@ int main(int argc, char** argv)
     vector<vecPairsList> reducedVector;
     for(int k = init; k<= end; k++)
         reducedVector.push_back(extractedLines[k]);
-    //MatrixXf m = mergeLines(reducedVector);
-    MatrixXf m = mergeLines(extractedLines);
+    //MatrixXf m = mergeLines(createVector());
+    MatrixXf m = mergeLines(reducedVector);
+    //MatrixXf m = mergeLines(extractedLines);
     cout << "Size m: " << m.rows() << " " << m.cols() << endl;
     printLinesByExtremes(m.block(6,0,4,m.cols()), MatrixXf::Identity(3,3), "merged_lines.txt");
 
-//    cout << "prove" << endl << endl;
-//    cout << obtainNewExtremes(Vector4f(7,7,10,10), Vector4f(3,3,5,5)) << endl << endl;
-//    cout << obtainNewExtremes(Vector4f(7,7,10,10), Vector4f(12,12,14,14)) << endl << endl;
-//    cout << obtainNewExtremes(Vector4f(7,7,10,10), Vector4f(5,5,8,8)) << endl << endl;
-//    cout << obtainNewExtremes(Vector4f(7,7,10,10), Vector4f(8,8,11,11)) << endl << endl;
+    cout << endl << "Proiezione punto" << endl;
+    cout << projectByEquation(Vector3f(2, -1, 0), Vector2f(2,3)) << endl << endl;
+
+
+    Vector4f line1(2,3,2,1);
+    Vector4f line2(2,1,5,1);
+    MatrixXf two_lines(4,2);
+    two_lines.block(0,0,4,1) = line1;
+    two_lines.block(0,1,4,1) = line2;
+
+    float angle = 45*M_PI/180;
+    MatrixXf prova_t(3,3);
+    prova_t << cos(angle), -sin(angle), 5, sin(angle), cos(angle), 2, 0, 0, 1;
+//    prova_t << 1,0,5,0,1,0,0,0,1;
+//    MatrixXf prova_t = MatrixXf::Identity(3,3);
+
+    MatrixXf transf_vectors(4,2);
+    transf_vectors.block(0,0,2,2) = transformVectors(two_lines.block(0,0,2,2), prova_t);
+    transf_vectors.block(2,0,2,2) = transformVectors(two_lines.block(2,0,2,2), prova_t);
+    cout << "transf_vectors" << endl << transf_vectors << endl;
+
+    remove("prova_transf.txt");
+    FILE* prova_transf = fopen("prova_transf.txt", "a");
+    stringstream ss_prova;
+    for(int w = 0; w<transf_vectors.cols(); w++)
+    {
+        Vector4f column = transf_vectors.block(0,w,4,1);
+
+        ss_prova << column(0) << "\t" << column(1) << "\n" <<
+                    column(2) << "\t" << column(3) << "\n\n";
+
+        fputs(ss_prova.str().c_str(), prova_transf);
+    }
+
+    Vector2f polar1 = polarRepresentation(line1.block(0,0,2,1), line1.block(2,0,2,1));
+    //Vector2f polar2 = polarRepresentation(transf_vectors.block(0,0,2,1), transf_vectors.block(2,0,2,1));
+    Vector2f polar2 = new_transformRT(transf_vectors.block(0,0,4,1));
+
+    cout << "differenza theta " << 180*fabs(polar1(1)-polar2(1))/M_PI << endl;
+
 
 }

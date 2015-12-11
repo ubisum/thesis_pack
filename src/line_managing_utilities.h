@@ -5,9 +5,9 @@
 #include "misc_utilities.h"
 
 #define NORM_THRESHOLD 0.8
-#define MP_THRESHOLD pow(0.3,2)
+#define MP_THRESHOLD pow(0.1,2)
 #define ANGLE_THRESHOLD 5*M_PI/180
-#define THETA_THRESHOLD 0.1
+#define THETA_THRESHOLD 0.7
 
 using namespace least_squares;
 using namespace utilities;
@@ -24,6 +24,29 @@ Vector2f middlepoint(Vector2f point_a, Vector2f point_b)
     mp << point_a(0)+point_b(0), point_a(1)+point_b(1);
 
     return 0.5*mp;
+}
+
+void stampaLineeMedie(string file_name, Vector2f rho_theta)
+{
+    FILE* fid = fopen(file_name.c_str(), "a");
+
+    // coefficients of line
+    float a = cos(rho_theta(1));
+    float b = sin(rho_theta(1));
+    float c = -rho_theta(0);
+
+    Vector2f ex1;
+    ex1 << 0, -c/b;
+
+    Vector2f ex2;
+    ex2 << -c/a, 0;
+
+    stringstream ss;
+    ss << ex1(0) << "\t" << ex1(1) << "\n" << ex2(0) << "\t" << ex2(1) << "\n\n";
+    //ss << "ciao";
+
+    fputs(ss.str().c_str(), fid);
+
 }
 
 Vector2f middlepoint(Vector4f line_extremes)
@@ -264,7 +287,7 @@ vector<indeces_pair> evaluateByNormal(MatrixXf left_lines, MatrixXf right_lines,
             Vector2f left_normal = left_lines.block(2,j,2,1);
 
             // middlepoints
-            Vector2f left_mp = left_lines.block(0,0,2,1);
+            //Vector2f left_mp = left_lines.block(0,0,2,1);
             Vector2f mp_rot = transformVectors(right_lines.block(0,i,2,1), T);
 
             if(/*rot_normal.transpose()*left_normal*/ rot_normal.dot(left_normal) > NORM_THRESHOLD
@@ -322,13 +345,24 @@ vector<indeces_pair> evaluateByTheta(vector<indeces_pair> indeces, MatrixXf left
         Vector2f left_mp = left_lines.block(0,ip.first,2,1);
         Vector2f mp_rot = transformVectors(right_lines.block(0,ip.second,2,1), T);
 
+        //extremes
+        Vector4f transf_extremes;
+//        transf_extremes.block(0,0,2,1) = transformVectors(right_lines.block(0,ip.second, 2,1), T);
+//        transf_extremes.block(2,0,2,1) = transformVectors(right_lines.block(2,ip.second, 2,1), T);
+        transf_extremes.block(0,0,2,1) = transformVectors(right_lines.block(6,ip.second, 2,1), T);
+        transf_extremes.block(2,0,2,1) = transformVectors(right_lines.block(8,ip.second, 2,1), T);
+
         // get right theta
-        Vector2f rt_rot = transformRT(right_lines.block(4,ip.second,2,1), T);
+        //Vector2f rt_rot = new_transformRT(right_lines.block(4,ip.second,2,1), T);
+        Vector2f rt_rot = new_transformRT(transf_extremes);
+        //cout << "rt_rot " << endl << rt_rot << endl;
         float right_theta = rt_rot(1);
+        //cout << "fabs " << fabs(right_theta-left_theta) << endl;
 
         if(fabs(right_theta-left_theta) < THETA_THRESHOLD && (left_mp-mp_rot).transpose()*(left_mp-mp_rot) < MP_THRESHOLD)
         {
             stringstream ss_rho;
+            //cout << "fabs " << fabs(right_theta-left_theta) << endl;
 
             // transform right middlepoint
             Vector2f mp_transf = transformVectors(right_lines.block(0, ip.second, 2, 1), T);
@@ -348,6 +382,8 @@ vector<indeces_pair> evaluateByTheta(vector<indeces_pair> indeces, MatrixXf left
 
 MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
 {
+    cout << "ingresso merge" << endl;
+    remove("linee_medie.txt");
     MatrixXf final_lines;
 
     if(extractedLines.size() == 1)
@@ -363,25 +399,28 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
         {
             // get lines in matrix form
             MatrixXf current_lines = linesByCol(extractedLines,i);
+
             cout << "Elaborating scan " << i+1 << "/" << extractedLines.size() << endl;
 
             // get current transformation matrix
             MatrixXf out_li, out_lj;
             MatrixXf T = getTransformationMatrix(final_lines, current_lines, out_li, out_lj);
+            cout << endl << T << endl<< endl;
             printLinesByExtremes(current_lines.block(6,0,4,current_lines.cols()), T, "convertedLines_1.txt");
 
             // get merging pairs
             vector<indeces_pair> pairs = evaluateByNormal(final_lines, current_lines, T);
             cout << "Num normal: " << pairs.size() << endl;
-            vector<indeces_pair> after_rho_evaluation = evaluateByTheta(pairs, final_lines, current_lines, T);
-            cout << "Num eval: " << after_rho_evaluation.size() << " right lines: " << current_lines.cols() << endl;
-            cout << "Lines to add: " << current_lines.cols()-(int)after_rho_evaluation.size() << endl;
+            vector<indeces_pair> after_theta_evaluation = evaluateByTheta(pairs, final_lines, current_lines, T);
+            cout << "Num eval: " << after_theta_evaluation.size() << " right lines: " << current_lines.cols() << endl;
+            cout << "Lines to add: " << current_lines.cols()-(int)after_theta_evaluation.size() << endl;
+            cout << "Evaluation size: " << after_theta_evaluation.size() << endl;
 
             // loop over pairs
-            for(int j = 0; j<(int)after_rho_evaluation.size(); j++)
+            for(int j = 0; j<(int)after_theta_evaluation.size(); j++)
             {
                 // grab a pair
-                indeces_pair ip = after_rho_evaluation[j];
+                indeces_pair ip = after_theta_evaluation[j];
 
                 // grab left line
                 Vector4f left_line = final_lines.block(6, ip.first, 4, 1);
@@ -394,25 +433,57 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
                 transf_right_line.block(0,0,2,1) = transformVectors(right_line.block(0,0,2,1), T);
                 transf_right_line.block(2,0,2,1) = transformVectors(right_line.block(2,0,2,1), T);
 
+                // transform right theta and rho
+                //Vector2f new_rho_theta = new_transformRT(current_lines.block(4,ip.second, 2, 1), T);
+                cout << "prima RT" << endl;
+                Vector2f new_rho_theta = new_transformRT(transf_right_line);
+                cout << "new_rho_theta" << endl << new_rho_theta << endl;
+                cout << "dopo RT" << endl;
+
+                // compute average rho and theta
+                Vector2f avg_rho_theta = 0.5*(final_lines.block(4,ip.first,2,1)+new_rho_theta);
+                stampaLineeMedie("linee_medie.txt", new_rho_theta);
+                cout << "Stampa linee medie" << endl;
+
+                // extremes of a segment on average line
+                //Vector4f avg_extremes = extremesFromPolar(avg_rho_theta(0), avg_rho_theta(1));
+
+                // project left extremes
+                Vector4f proj_left;
+//                proj_left.block(0,0,2,1) = projectPoint(avg_extremes, left_line.block(0,0,2,1));
+//                proj_left.block(2,0,2,1) = projectPoint(avg_extremes, left_line.block(2,0,2,1));
+                proj_left.block(0,0,2,1) = projectByEquation(avg_rho_theta, left_line.block(0,0,2,1));
+                proj_left.block(2,0,2,1) = projectByEquation(avg_rho_theta, left_line.block(2,0,2,1));
+
                 // merge lines
-                MatrixXf merged_lines = obtainNewExtremes(left_line, transf_right_line);
+                //MatrixXf merged_lines = obtainNewExtremes(left_line, transf_right_line);
+                MatrixXf merged_lines = obtainNewExtremes(proj_left, transf_right_line);
+                cout << "merged_cols " << merged_lines.cols() << endl;
 
                 // lines were merged
                 if(merged_lines.cols() == 1)
                 {
+                    cout << "Merged" << endl;
                     // create a new line column
+                    Vector2f line_rep = polarRepresentation(merged_lines.block(0,0,2,1), merged_lines.block(2,0,2,1));
+
+
                     MatrixXf new_col = MatrixXf::Zero(10,1);
                     new_col.block(0,0,2,1) = middlepoint(merged_lines);
-                    new_col.block(2,0,4,1) = final_lines.block(2,ip.first,4,1);
+                    //new_col.block(2,0,4,1) = final_lines.block(2,ip.first,4,1);
+                    new_col.block(2,0,2,1) = 0.5*(final_lines.block(2,ip.first,2,1)+current_lines.block(2, ip.second,2,1));
+                    new_col.block(4,0,2,1) = line_rep;
+                    //new_col.block(4,0,2,1) = avg_rho_theta;
                     new_col.block(6,0,4,1) = merged_lines;
 
                     // update column
                     final_lines.block(0,ip.first, 10, 1) = new_col.block(0,0,10,1);
                 }
 
-                // lines were not merged
+                // lines were not mergedright_lines.block(4,ip.second,2,1), T
                 else
                 {
+                     cout << "Not merged" << endl;
                     // create a new line column
                     MatrixXf new_col = transformFullLine(current_lines.block(0,ip.second, 10, 1), T);
 
@@ -433,7 +504,7 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
 
             // add other lines
             cout << "Prima add: " << final_lines.cols() << endl;
-            addRemainingCols(final_lines, current_lines, after_rho_evaluation, T);
+            addRemainingCols(final_lines, current_lines, after_theta_evaluation, T);
             cout << "Dopo add:" << final_lines.cols() << endl << endl;
 
         }

@@ -14,35 +14,171 @@ using namespace std;
 namespace utilities
 {
 
-MatrixXf transformRT(MatrixXf lines, MatrixXf T)
+//MatrixXf transformRT(MatrixXf lines, MatrixXf T)
+//{
+//    // local data
+//    float x = T(0,2);
+//    float y = T(1,2);
+//    float theta = atan2(T(1,0),T(0,0));
+
+//    // prepare output
+//    MatrixXf transRT = MatrixXf::Zero(lines.rows(), lines.cols());
+
+//    // transform
+//    for(int i = 0; i<lines.cols(); i++)
+//    {
+//        // select a line
+//        Vector2f line_ith = lines.block(0,i,2,1);
+
+////        // current values
+//        float rho_ith = line_ith(0);
+//        float theta_ith = line_ith(1);
+
+//        // compute transformation
+//        float new_angle = theta_ith + theta;
+//        transRT(1,i) = new_angle;
+//        transRT(0,i) = rho_ith + cos(new_angle)*x + sin(new_angle)*y;
+
+////        Vector2f pr = polarRepresentation(line_ith.block(0,0,2,1), line_ith.block(2,0,2,1));
+////        transRT.block(0,i,2,i) = pr;
+
+//    }
+
+//    // return transformed data
+//    return transRT;
+
+//}
+
+MatrixXf new_transformRT(MatrixXf lines)
 {
     // local data
-    float x = T(0,2);
-    float y = T(1,2);
-    float theta = atan2(T(1,0),T(0,0));
+//    float x = T(0,2);
+//    float y = T(1,2);
+//    float theta = atan2(T(1,0),T(0,0));
 
     // prepare output
-    MatrixXf transRT = MatrixXf::Zero(lines.rows(), lines.cols());
+    MatrixXf transRT = MatrixXf::Zero(2, lines.cols());
 
     // transform
     for(int i = 0; i<lines.cols(); i++)
     {
         // select a line
-        Vector2f line_ith = lines.block(0,i,2,1);
+        Vector4f line_ith = lines.block(0,i,4,1);
 
-        // current values
-        float rho_ith = line_ith(0);
-        float theta_ith = line_ith(1);
+//        // current valuesline
+//        float rho_ith = line_ith(0);
+//        float theta_ith = line_ith(1);
 
-        // compute transformation
-        float new_angle = theta_ith + theta;
-        transRT(1,i) = new_angle;
-        transRT(0,i) = rho_ith + cos(new_angle)*x + sin(new_angle)*y;
+//        // compute transformation
+//        float new_angle = theta_ith + theta;
+//        transRT(1,i) = new_angle;
+//        transRT(0,i) = rho_ith + cos(new_angle)*x + sin(new_angle)*y;
+
+        Vector2f pr = polarRepresentation(line_ith.block(0,0,2,1), line_ith.block(2,0,2,1));
+        transRT.block(0,i,2,1) = pr;
+
     }
 
     // return transformed data
     return transRT;
 
+}
+
+Vector4f extremesFromPolar(float rho_avg, float theta_avg)
+{
+    // coefficients
+    float a = cos(theta_avg);
+    float b = sin(theta_avg);
+    float c = -rho_avg;
+
+    // compute extremes
+    Vector4f extremes;
+    if(a == 0)
+        extremes << 0, -c/b, 1, -c/b;
+
+    else if (b == 0)
+        extremes << -c/a, 0, -c/a, 1;
+
+    else
+        extremes << 0, -c/b, 1, -a/b-c/b;
+
+    return extremes;
+}
+
+
+Vector2f projectByEquation(Vector3f coeffs, Vector2f point)
+{
+    // file
+    remove("byequation.txt");
+    FILE* fid = fopen("byequation.txt", "a");
+
+    // coefficients of line
+    float a = coeffs(0);
+    float b = coeffs(1);
+    float c = coeffs(2);
+
+    // return value
+    Vector2f projectedPoint;
+
+    if(a == 0)
+    {
+//        float dy = -c/b - point(1);
+//        projectedPoint << point(0), point(1) + dy;
+
+        float dx = -c/a - point(0);
+        projectedPoint << point(0) + dx, point(1);
+    }
+
+    else if(b == 0)
+    {
+
+        float dy = -c/b - point(1);
+        projectedPoint << point(0), point(1) + dy;
+//        float dx = -c/a - point(0);
+//        projectedPoint << point(0) + dx, point(1);
+    }
+
+    else
+    {
+        // angular coefficients
+        float m1 = -a/b;
+        float m2 = b/a;
+
+        // coefficient d in equation y = m2*x + d
+        float d = point(1) - m2*point(0);
+
+        // coordinates of projected point
+        float px = (d + c/b)/(m1 - m2);
+        float py = m1*px - c/b;
+
+        // store coordinates
+        projectedPoint << px, py;
+
+        //cout << "Prova: " << projectedPoint(1)-m1*projectedPoint(0)+c/b << endl;
+    }
+
+    stringstream ss;
+    ss << 0 << "\t" << -c/b << "\n" <<
+          1 << "\t" << -a/b - c/b << "\n\n" <<
+          point(0) << "\t" << point(1) << "\n" <<
+          projectedPoint(0) << "\t" << projectedPoint(1);
+
+    fputs(ss.str().c_str(), fid);
+    fclose(fid);
+
+    cout << "Projection by equation: " << projectedPoint(0) << " " << projectedPoint(1) << endl;
+
+    return projectedPoint;
+}
+
+Vector2f projectByEquation(Vector2f rho_theta, Vector2f point)
+{
+    // coefficients of line
+    float a = cos(rho_theta(1));
+    float b = sin(rho_theta(1));
+    float c = -rho_theta(0);
+
+    return projectByEquation(Vector3f(a, b, c), point);
 }
 
 MatrixXf transformVectors(MatrixXf vectors, MatrixXf T)
@@ -74,9 +210,12 @@ MatrixXf transformFullLine(MatrixXf line, MatrixXf T)
         output = MatrixXf::Zero(10,1);
         output.block(0,0,2,1) = transformVectors(line.block(0,0,2,1), T);
         output.block(2,0,2,1) = T.block(0,0,2,2)*line.block(2,0,2,1);
-        output.block(4,0,2,1) = transformRT(line.block(4,0,2,1), T);
+        //output.block(4,0,2,1) = transformRT(line.block(4,0,2,1), T);
+        //output.block(4,0,2,1) = transformRT(line.block(4,0,2,1), T);
         output.block(6,0,2,1) = transformVectors(line.block(6,0,2,1), T);
         output.block(8,0,2,1) = transformVectors(line.block(8,0,2,1), T);
+        //output.block(4,0,2,1) = new_transformRT(output.block(6,0,4,1), T);
+        output.block(4,0,2,1) = new_transformRT(output.block(6,0,4,1));
     }
 
     return output;

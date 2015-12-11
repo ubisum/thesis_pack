@@ -24,6 +24,7 @@ namespace utilities
     typedef pair<float, float> coordinate;
     typedef pair<Vector2f, Vector2f> vecPair;
     typedef vector<vecPair> vecPairsList;
+
     struct completeInformation
     {
         coordinate position;

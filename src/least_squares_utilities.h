@@ -331,14 +331,16 @@ MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& rig
     // initial transformation matrix
     MatrixXf transf_mat = MatrixXf::Identity(3,3);
 
+    // files
+    remove("iter_corr.txt");
+    FILE* iter_corr = fopen("iter_corr", "a");
+
+    remove("iter_chi.txt");
+    FILE* iter_chi = fopen("iter_chi.txt", "a");
+
     // initial matrices
-    //MatrixXf Li = left_lines;
-    //MatrixXf Lj = right_lines;
     MatrixXf Li = addIndecesRow(left_lines);
-    //cout << Li << endl << endl;
     MatrixXf Lj = addIndecesRow(right_lines);
-//    MatrixXf temp_li = MatrixXf::Zero(10,1);
-//    MatrixXf temp_lj = MatrixXf::Zero(10,1);
     MatrixXf temp_li = MatrixXf::Zero(11,1);
     MatrixXf temp_lj = MatrixXf::Zero(11,1);
     MatrixXi assoc;
@@ -368,6 +370,11 @@ MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& rig
         // compute associations
         MatrixXi temp_assoc = computeAssociations(temp_dist, LAST2_THRESH);
 
+        // write data for diagrams
+        stringstream ss_corr;
+        ss_corr << i << "\t" << temp_assoc.rows() << "\n";
+        fputs(ss_corr.str().c_str(), iter_corr);
+
         // check number of associations
         if(temp_assoc.rows() < 3)
             break;
@@ -379,8 +386,6 @@ MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& rig
         }
 
         // new matrices
-//        temp_li = MatrixXf::Zero(10, assoc.rows());
-//        temp_lj = MatrixXf::Zero(10, assoc.rows());
         temp_li = MatrixXf::Zero(11, assoc.rows());
         temp_lj = MatrixXf::Zero(11, assoc.rows());
         MatrixXf Z = MatrixXf::Zero(8,assoc.rows());
@@ -389,8 +394,6 @@ MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& rig
         for(int j = 0; j<assoc.rows(); j++)
         {
             MatrixXi assoc_row = assoc.block(j,0,1,2);
-//            temp_li.block(0,j,10,1) = Li.block(0,assoc_row(0,0),10,1);
-//            temp_lj.block(0,j,10,1) = Lj.block(0,assoc_row(0,1),10,1);
             temp_li.block(0,j,11,1) = Li.block(0,assoc_row(0,0),11,1);
             temp_lj.block(0,j,11,1) = Lj.block(0,assoc_row(0,1),11,1);
             Z.block(0,j,4,1) = Li.block(0,assoc_row(0,0),4,1);
@@ -409,6 +412,11 @@ MatrixXf getTransformationMatrix(const MatrixXf& left_lines, const MatrixXf& rig
                           0, 0, 1;
 
         transf_mat = new_transf_mat;
+
+        // write chi
+        stringstream ss_chi;
+        ss_chi << i << "\t" << new_transf_vec(3)/assoc.rows() << "\n";
+        fputs(ss_chi.str().c_str(), iter_chi);
 
     }
 
