@@ -49,6 +49,19 @@ void stampaLineeMedie(string file_name, Vector2f rho_theta)
 
 }
 
+void stampaLineeDestre(string file_name, Vector4f extremes)
+{
+    FILE* fid = fopen(file_name.c_str(), "a");
+
+    stringstream ss;
+    ss << extremes(0) << "\t" << extremes(1) << "\n" <<
+          extremes(2) << "\t" << extremes(3) << "\n\n";
+
+    fputs(ss.str().c_str(), fid);
+
+
+}
+
 Vector2f middlepoint(Vector4f line_extremes)
 {
     return middlepoint(line_extremes.block(0,0,2,1), line_extremes.block(2,0,2,1));
@@ -384,6 +397,7 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
 {
     cout << "ingresso merge" << endl;
     remove("linee_medie.txt");
+    remove("linee_destre.txt");
     MatrixXf final_lines;
 
     if(extractedLines.size() == 1)
@@ -399,14 +413,21 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
         {
             // get lines in matrix form
             MatrixXf current_lines = linesByCol(extractedLines,i);
+            MatrixXf rot_prova(3,3);
+//            rot_prova << cos(M_PI/20), -sin(M_PI/20), 0, sin(M_PI/20), cos(M_PI/20), 0, 0,0,1;
+//            current_lines.block(6,0, 2,1) = transformVectors(current_lines.block(6,0, 2,1), rot_prova);
+//            current_lines.block(8,0, 2,1) = transformVectors(current_lines.block(8,0, 2,1), rot_prova);
 
             cout << "Elaborating scan " << i+1 << "/" << extractedLines.size() << endl;
 
             // get current transformation matrix
             MatrixXf out_li, out_lj;
             MatrixXf T = getTransformationMatrix(final_lines, current_lines, out_li, out_lj);
-            cout << endl << T << endl<< endl;
+            //cout << endl << T << endl<< endl;
+
             printLinesByExtremes(current_lines.block(6,0,4,current_lines.cols()), T, "convertedLines_1.txt");
+            //printLinesByExtremes(current_lines.block(6,0,4,current_lines.cols()), rot_prova, "convertedLines_1.txt");
+            //printLinesByExtremes(current_lines.block(6,0,4,current_lines.cols()), MatrixXf::Identity(3,, "convertedLines_1.txt");
 
             // get merging pairs
             vector<indeces_pair> pairs = evaluateByNormal(final_lines, current_lines, T);
@@ -432,6 +453,7 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
                 Vector4f transf_right_line = Vector4f::Zero(4,1);
                 transf_right_line.block(0,0,2,1) = transformVectors(right_line.block(0,0,2,1), T);
                 transf_right_line.block(2,0,2,1) = transformVectors(right_line.block(2,0,2,1), T);
+                stampaLineeDestre("linee_destre.txt", transf_right_line);
 
                 // transform right theta and rho
                 //Vector2f new_rho_theta = new_transformRT(current_lines.block(4,ip.second, 2, 1), T);
@@ -443,6 +465,7 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
                 // compute average rho and theta
                 Vector2f avg_rho_theta = 0.5*(final_lines.block(4,ip.first,2,1)+new_rho_theta);
                 stampaLineeMedie("linee_medie.txt", new_rho_theta);
+                //stampaLineeMedie("linee_medie.txt", avg_rho_theta);
                 cout << "Stampa linee medie" << endl;
 
                 // extremes of a segment on average line
@@ -480,7 +503,7 @@ MatrixXf mergeLines(const vector<vecPairsList>& extractedLines)
                     final_lines.block(0,ip.first, 10, 1) = new_col.block(0,0,10,1);
                 }
 
-                // lines were not mergedright_lines.block(4,ip.second,2,1), T
+                // lines were not merged
                 else
                 {
                      cout << "Not merged" << endl;

@@ -74,8 +74,9 @@ MatrixXf new_transformRT(MatrixXf lines)
 //        transRT(1,i) = new_angle;
 //        transRT(0,i) = rho_ith + cos(new_angle)*x + sin(new_angle)*y;
 
-        Vector2f pr = polarRepresentation(line_ith.block(0,0,2,1), line_ith.block(2,0,2,1));
-        transRT.block(0,i,2,1) = pr;
+        //Vector2f pr = polarRepresentation(line_ith.block(0,0,2,1), line_ith.block(2,0,2,1));
+        //transRT.block(0,i,2,1) = pr;
+        transRT.block(0,i,2,1) = polarRepresentation(line_ith.block(0,0,2,1), line_ith.block(2,0,2,1));
 
     }
 
@@ -122,20 +123,20 @@ Vector2f projectByEquation(Vector3f coeffs, Vector2f point)
 
     if(a == 0)
     {
-//        float dy = -c/b - point(1);
-//        projectedPoint << point(0), point(1) + dy;
+        float dy = -c/b - point(1);
+        projectedPoint << point(0), point(1) + dy;
 
-        float dx = -c/a - point(0);
-        projectedPoint << point(0) + dx, point(1);
+//        float dx = -c/a - point(0);
+//        projectedPoint << point(0) + dx, point(1);
     }
 
     else if(b == 0)
     {
 
-        float dy = -c/b - point(1);
-        projectedPoint << point(0), point(1) + dy;
-//        float dx = -c/a - point(0);
-//        projectedPoint << point(0) + dx, point(1);
+//        float dy = -c/b - point(1);
+//        projectedPoint << point(0), point(1) + dy;
+        float dx = -c/a - point(0);
+        projectedPoint << point(0) + dx, point(1);
     }
 
     else
